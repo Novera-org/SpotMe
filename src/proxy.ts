@@ -8,14 +8,19 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = getSessionCookie(request);
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route),
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + "/"),
   );
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  const isAuthRoute = authRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + "/"),
+  );
 
   if (isProtectedRoute && !sessionCookie) {
     const signInUrl = new URL("/sign-in", request.url);
-    signInUrl.searchParams.set("callbackUrl", pathname);
+    signInUrl.searchParams.set(
+      "callbackUrl",
+      pathname + request.nextUrl.search,
+    );
     return NextResponse.redirect(signInUrl);
   }
 

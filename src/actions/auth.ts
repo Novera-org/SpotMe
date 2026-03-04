@@ -32,12 +32,17 @@ export async function signInAction(
       },
       headers: await headers(),
     });
-  } catch {
+  } catch (err) {
+    console.error("[signInAction] Sign-in failed:", err);
     return { error: "Invalid email or password" };
   }
 
-  // Read callbackUrl from form hidden input, default to /dashboard
-  const callbackUrl = (formData.get("callbackUrl") as string) || "/dashboard";
+  // Validate callbackUrl to prevent open redirects
+  const rawCallback = (formData.get("callbackUrl") as string) || "/dashboard";
+  const callbackUrl =
+    rawCallback.startsWith("/") && !rawCallback.startsWith("//")
+      ? rawCallback
+      : "/dashboard";
   redirect(callbackUrl);
 }
 
@@ -66,8 +71,15 @@ export async function signUpAction(
       },
       headers: await headers(),
     });
-  } catch {
-    return { error: "An account with this email already exists" };
+  } catch (err: unknown) {
+    console.error("[signUpAction] Sign-up failed:", err);
+
+    // Check for unique constraint violation (email already exists)
+    const message =
+      err instanceof Error && err.message?.includes("unique")
+        ? "An account with this email already exists"
+        : "Failed to create account, please try again";
+    return { error: message };
   }
 
   redirect("/dashboard");
