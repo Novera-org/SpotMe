@@ -1,0 +1,30 @@
+import { z } from "zod";
+
+export const signInSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const signUpSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters").max(100),
+    email: z.string().email("Invalid email address"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(128),
+    confirmPassword: z.string(),
+  })
+  .check((ctx) => {
+    if (ctx.value.password !== ctx.value.confirmPassword) {
+      ctx.issues.push({
+        code: "custom",
+        message: "Passwords do not match",
+        input: ctx.value.confirmPassword,
+        path: ["confirmPassword"],
+      });
+    }
+  });
+
+export type SignInInput = z.infer<typeof signInSchema>;
+export type SignUpInput = z.infer<typeof signUpSchema>;
