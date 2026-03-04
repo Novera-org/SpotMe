@@ -9,7 +9,7 @@ export const downloads = pgTable("downloads", {
   imageId: uuid("image_id")
     .notNull()
     .references(() => images.id, { onDelete: "cascade" }),
-  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
   guestId: uuid("guest_id").references(() => guests.id, {
     onDelete: "set null",
   }),
