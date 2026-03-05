@@ -20,10 +20,9 @@ export async function GET(request: Request) {
   // Calculate the cutoff date (30 days ago)
   const cutoff = new Date(Date.now() - GUEST_SESSION_MAX_AGE * 1000);
 
-  const deleted = await db
+  const result = await db
     .delete(guests)
-    .where(lt(guests.createdAt, cutoff))
-    .returning({ id: guests.id });
+    .where(lt(guests.createdAt, cutoff));
 
-  return NextResponse.json({ deleted: deleted.length });
+  return NextResponse.json({ deleted: result.rowCount });
 }
