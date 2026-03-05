@@ -163,7 +163,7 @@ export default function TestMigrationPage() {
         <h2 className="text-xl font-semibold text-zinc-800">Test the Migration</h2>
         <ol className="list-decimal pl-5 space-y-2 text-sm text-zinc-600">
           <li>Ensure you are in an <strong>incognito window</strong> as a Guest.</li>
-          <li>Click both <strong>"Create Mock Search"</strong> and <strong>"Create Mock Download"</strong>.</li>
+          <li>Click both <strong>&quot;Create Mock Search&quot;</strong> and <strong>&quot;Create Mock Download&quot;</strong>.</li>
           <li>Navigate to <a href="/sign-up" className="text-blue-600 hover:text-blue-800 underline transition-colors">Sign Up</a> and create an account.</li>
           <li>Return to this page <code>/test-migration</code>.</li>
           <li><strong>Check Result:</strong> Both sections should still show the exact same records!</li>
