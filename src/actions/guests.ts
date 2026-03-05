@@ -43,38 +43,35 @@ export async function migrateGuestToUser() {
 
     console.log(`[migration] Found guest in DB: ${guest.id}. Starting transactional transfer...`);
     
-    // 2. Wrap updates and deletion in a single transaction
-    const result = await db.transaction(async (tx) => {
-      const [updatedSessions, updatedDownloads] = await Promise.all([
-        tx
-          .update(searchSessions)
-          .set({ 
-            userId: userId,
-            guestId: null 
-          })
-          .where(eq(searchSessions.guestId, guest.id))
-          .returning(),
-        
-        tx
-          .update(downloads)
-          .set({ 
-            userId: userId, 
-            guestId: null 
-          })
-          .where(eq(downloads.guestId, guest.id))
-          .returning()
-      ]);
-
-      // 3. Cleanup guest record inside transaction
-      await tx.delete(guests).where(eq(guests.id, guest.id));
+    // 2. Perform updates and deletion sequentially
+    // (We use sequential steps because neon-http doesn't support transactions)
+    const [updatedSessions, updatedDownloads] = await Promise.all([
+      db
+        .update(searchSessions)
+        .set({ 
+          userId: userId,
+          guestId: null 
+        })
+        .where(eq(searchSessions.guestId, guest.id))
+        .returning(),
       
-      return {
-        searchCount: updatedSessions.length,
-        downloadCount: updatedDownloads.length
-      };
-    });
+      db
+        .update(downloads)
+        .set({ 
+          userId: userId, 
+          guestId: null 
+        })
+        .where(eq(downloads.guestId, guest.id))
+        .returning()
+    ]);
 
-    console.log(`[migration] Transaction committed. Moved ${result.searchCount} sessions and ${result.downloadCount} downloads.`);
+    // 3. Cleanup guest record
+    await db.delete(guests).where(eq(guests.id, guest.id));
+    
+    const migratedSessionsCount = updatedSessions.length;
+    const migratedDownloadsCount = updatedDownloads.length;
+
+    console.log(`[migration] Successfully moved ${migratedSessionsCount} sessions and ${migratedDownloadsCount} downloads.`);
 
     // 4. Clear cookie and cache only after successful commit
     await clearGuestCookie();
@@ -84,8 +81,8 @@ export async function migrateGuestToUser() {
 
     return {
       migrated: true,
-      searchSessionsMigrated: result.searchCount,
-      downloadsMigrated: result.downloadCount,
+      searchSessionsMigrated: migratedSessionsCount,
+      downloadsMigrated: migratedDownloadsCount,
     };
   } catch (error) {
     console.error("[migration] FATAL ERROR during migration:", error);

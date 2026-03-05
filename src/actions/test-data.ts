@@ -23,8 +23,7 @@ export async function createTestData() {
   // 1. Get current identity (guest or user)
   const identity = await requireIdentity();
 
-  // 2. Identity Guard: Only allow if it's a dev environment OR if user is already an admin
-  // (In dev, we allow anyone to trigger it to bootstrap the first admin)
+  // 2. Identity Guard
   if (process.env.NODE_ENV !== "development") {
     const sessionUser = await db.query.user.findFirst({
       where: eq(user.id, identity.userId || ""),
@@ -34,38 +33,39 @@ export async function createTestData() {
     }
   }
   
-  // 3. Ensure an admin user exists to own an album
-  let adminUser = await db.query.user.findFirst({
-    where: eq(user.role, "admin"),
-  });
+  // 3. Perform idempotent setup using atomic upserts
+  // (We use individual statements because neon-http doesn't support transactions)
+  
+  // 4. Upsert Admin User
+  const [adminUser] = await db
+    .insert(user)
+    .values({
+      name: "Test Admin",
+      email: "admin@test.com",
+      role: "admin",
+    })
+    .onConflictDoUpdate({
+      target: user.email,
+      set: { role: "admin" } // Ensure they are admin
+    })
+    .returning();
 
-  if (!adminUser) {
-    [adminUser] = await db
-      .insert(user)
-      .values({
-        name: "Test Admin",
-        email: "admin@test.com",
-        role: "admin",
-      })
-      .returning();
-  }
+  // 5. Upsert Test Album
+  const [testAlbum] = await db
+    .insert(albums)
+    .values({
+      adminId: adminUser.id,
+      title: "Test Album",
+      slug: "test-album",
+      status: "active",
+    })
+    .onConflictDoUpdate({
+      target: albums.slug,
+      set: { status: "active" }
+    })
+    .returning();
 
-  // 4. Ensure an album exists
-  let testAlbum = await db.query.albums.findFirst();
-
-  if (!testAlbum) {
-    [testAlbum] = await db
-      .insert(albums)
-      .values({
-        adminId: adminUser.id,
-        title: "Test Album",
-        slug: "test-album",
-        status: "active",
-      })
-      .returning();
-  }
-
-  // 5. Create a search session for the current identity
+  // 6. Create a search session for the current identity
   const [newSession] = await db
     .insert(searchSessions)
     .values({
@@ -89,7 +89,7 @@ export async function createDownloadTestData() {
 
   const identity = await requireIdentity();
   
-  // 2. Identity Guard (similar to above)
+  // 2. Identity Guard
   if (process.env.NODE_ENV !== "development") {
     const sessionUser = await db.query.user.findFirst({
       where: eq(user.id, identity.userId || ""),
@@ -99,17 +99,31 @@ export async function createDownloadTestData() {
     }
   }
 
-  let adminUser = await db.query.user.findFirst({ where: eq(user.role, "admin") });
-  if (!adminUser) {
-    [adminUser] = await db.insert(user).values({ name: "Test Admin", email: "admin@test.com", role: "admin" }).returning();
-  }
+  // 3. Upsert Admin
+  const [adminUser] = await db
+    .insert(user)
+    .values({ name: "Test Admin", email: "admin@test.com", role: "admin" })
+    .onConflictDoUpdate({
+      target: user.email,
+      set: { role: "admin" }
+    })
+    .returning();
 
-  let testAlbum = await db.query.albums.findFirst();
-  if (!testAlbum) {
-    [testAlbum] = await db.insert(albums).values({ adminId: adminUser.id, title: "Test Album", slug: "test-album", status: "active" }).returning();
-  }
+  // 4. Upsert Album
+  const [testAlbum] = await db
+    .insert(albums)
+    .values({ adminId: adminUser.id, title: "Test Album", slug: "test-album", status: "active" })
+    .onConflictDoUpdate({
+      target: albums.slug,
+      set: { status: "active" }
+    })
+    .returning();
 
-  let testImage = await db.query.images.findFirst({ where: eq(images.albumId, testAlbum.id) });
+  // 5. Find or Create Image
+  let testImage = await db.query.images.findFirst({ 
+    where: eq(images.albumId, testAlbum.id) 
+  });
+
   if (!testImage) {
     [testImage] = await db.insert(images).values({
       albumId: testAlbum.id,
@@ -120,6 +134,7 @@ export async function createDownloadTestData() {
     }).returning();
   }
 
+  // 6. Create Download
   const [newDownload] = await db
     .insert(downloads)
     .values({

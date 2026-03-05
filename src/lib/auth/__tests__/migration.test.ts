@@ -36,32 +36,18 @@ mock.module("../guest", () => ({
   },
 }));
 
-// Mock db and transaction
-const txMock = {
-  update: mock(() => ({
-    set: mock(() => ({
-      where: mock(() => ({
-        returning: mock(async () => [1, 2, 3]), // Simulate 3 items
-      })),
-    })),
-  })),
-  delete: mock(() => ({
-    where: mock(async () => {}),
-  })),
-};
-
+// Mock db
 mock.module("@/lib/db", () => ({
   db: {
-    transaction: mock(async (callback: any) => {
-      console.log("Mock db.transaction called");
-      return await callback(txMock);
-    }),
     update: mock(() => ({
       set: mock(() => ({
         where: mock(() => ({
-          returning: mock(async () => []), 
+          returning: mock(async () => [1, 2, 3]), // Simulate 3 items
         })),
       })),
+    })),
+    delete: mock(() => ({
+      where: mock(async () => {}),
     })),
   },
 }));
