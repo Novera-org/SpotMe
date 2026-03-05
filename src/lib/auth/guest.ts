@@ -67,6 +67,7 @@ export async function getCurrentGuest() {
     .limit(1);
 
   if (existing.length === 0) {
+    await clearGuestCookie();
     return null;
   }
 
