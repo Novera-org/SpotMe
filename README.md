@@ -171,9 +171,9 @@ src/
 ## Features
 
 - [x] **Project foundation** — Next.js 16, Bun, TypeScript, Tailwind
-- [ ] **Database schema** — 17 tables across 6 groups with Drizzle ORM
-- [ ] **Authentication** — Email/password auth with Better Auth & role-based access
-- [ ] **Guest system** — Anonymous users with session cookies & merge-on-signup
+- [x] **Database schema** — 17 tables across 6 groups with Drizzle ORM
+- [x] **Authentication** — Email/password auth with Better Auth & role-based access
+- [x] **Guest system** — Anonymous users with session cookies & merge-on-signup
 - [ ] **Album management** — CRUD, settings, share links, QR code generation
 - [ ] **Image upload** — Bulk upload to Cloudflare R2 with presigned URLs & progress tracking
 - [ ] **Search & matching** — Selfie upload, AI face matching, results display
