@@ -20,7 +20,7 @@ export function GuestMigrationHandler() {
       // User is signed in — migrate any guest data
       console.log("[guest-migration] User session detected:", userId, ". Triggering migration...");
       hasMigrated.current = true;
-      migrateGuestToUser(userId)
+      migrateGuestToUser()
         .then((res) => {
           console.log("[guest-migration] Migration process finished. Result:", res);
           if (res.migrated) {

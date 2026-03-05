@@ -5,15 +5,29 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { guests, searchSessions, downloads } from "@/lib/db/schema";
 import { getCurrentGuest, clearGuestCookie } from "@/lib/auth/guest";
+import { getServerSession } from "@/lib/auth/helpers";
 
 /**
  * Migrates all guest activity (search sessions, downloads) to a user account.
  * Called automatically when a guest signs up or signs in.
  * Idempotent — safe to call when no guest exists.
  */
-export async function migrateGuestToUser(userId: string) {
+export async function migrateGuestToUser() {
   try {
-    console.log(`[migration] Starting migration. Targeted User ID: ${userId}`);
+    // 0. Resolve the authenticated user on the server
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      console.error("[migration] Unauthorized: No active session found.");
+      return {
+        migrated: false,
+        error: "Unauthorized",
+        searchSessionsMigrated: 0,
+        downloadsMigrated: 0,
+      };
+    }
+
+    const userId = session.user.id;
+    console.log(`[migration] Starting migration. Authenticated User ID: ${userId}`);
     
     // 1. Get guest from cookie
     const guest = await getCurrentGuest();

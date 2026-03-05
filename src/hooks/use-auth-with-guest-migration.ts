@@ -19,7 +19,7 @@ export function useAuthWithGuestMigration() {
 
     hasMigrated.current = true;
 
-    migrateGuestToUser(userId).catch((error) => {
+    migrateGuestToUser().catch((error) => {
       console.error("[guest-migration] Failed to migrate guest data:", error);
       // Reset so it can retry on next render
       hasMigrated.current = false;
