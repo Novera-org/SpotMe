@@ -7,6 +7,14 @@ mock.module("@neondatabase/serverless", () => ({
 
 // Mock getServerSession to be controllable
 let mockSession: any = null;
+// Mock the auth module itself to prevent better-auth initialization
+mock.module("@/lib/auth", () => ({
+  auth: {
+    api: {
+      getSession: mock(async () => null),
+    },
+  },
+}));
 mock.module("@/lib/auth/helpers", () => ({
   getServerSession: async () => {
     console.log("Mock getServerSession called, returning:", mockSession);

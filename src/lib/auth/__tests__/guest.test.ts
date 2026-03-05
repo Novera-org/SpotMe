@@ -42,6 +42,15 @@ mock.module("@/lib/auth/helpers", () => ({
   getServerSession: async () => null,
 }));
 
+// Mock the auth module itself to prevent better-auth initialization
+mock.module("@/lib/auth", () => ({
+  auth: {
+    api: {
+      getSession: mock(async () => null),
+    },
+  },
+}));
+
 // Now import the functions to test
 import { createGuest, getCurrentGuest } from "../guest";
 import { requireIdentity, getCurrentIdentity } from "../identity";
