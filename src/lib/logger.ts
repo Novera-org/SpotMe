@@ -26,12 +26,16 @@ export function hashId(id: string | null | undefined): string {
 
 export const processLogger = {
   info: (message: string, ...args: any[]) => {
+    // Info logs are kept in production for critical operational visibility
+    // but can be toggled here if needed.
     console.log(`[INFO] ${message}`, ...args);
   },
   error: (message: string, ...args: any[]) => {
+    // Error logs are always kept in production
     console.error(`[ERROR] ${message}`, ...args);
   },
   debug: (message: string, ...args: any[]) => {
+    // Debug logs are strictly for development
     if (process.env.NODE_ENV !== "production") {
       console.debug(`[DEBUG] ${message}`, ...args);
     }

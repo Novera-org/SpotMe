@@ -17,7 +17,6 @@ mock.module("@/lib/auth", () => ({
 }));
 mock.module("@/lib/auth/helpers", () => ({
   getServerSession: async () => {
-    console.log("Mock getServerSession called, returning:", mockSession);
     return mockSession;
   },
 }));
@@ -31,9 +30,7 @@ mock.module("next/cache", () => ({
 let mockGuest: any = null;
 mock.module("../guest", () => ({
   getCurrentGuest: async () => mockGuest,
-  clearGuestCookie: async () => {
-    console.log("Mock clearGuestCookie called");
-  },
+  clearGuestCookie: async () => {},
 }));
 
 // Mock db

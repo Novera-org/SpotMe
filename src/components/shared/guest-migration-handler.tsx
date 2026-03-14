@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import { migrateGuestToUser } from "@/actions/guests";
+import { processLogger } from "@/lib/logger";
 
 export function GuestMigrationHandler() {
   const { data: session, isPending } = useSession();
@@ -28,18 +29,18 @@ export function GuestMigrationHandler() {
       
       migrateGuestToUser()
         .then((res) => {
-          console.log("[guest-migration] Migration process finished. Result:", res);
+          processLogger.info("[guest-migration] Migration process finished. Result:", res);
           
           // Only mark as migrated for this user if the process completed successfully
           migratedUserId.current = userId;
 
           if (res.migrated) {
-            console.log("[guest-migration] Data was migrated. Refreshing...");
+            processLogger.info("[guest-migration] Data was migrated. Refreshing...");
             router.refresh();
           }
         })
         .catch((error) => {
-          console.error("[guest-migration] FATAL: Migration action failed:", error);
+          processLogger.error("[guest-migration] FATAL: Migration action failed:", error);
           // We do NOT set migratedUserId.current here, allowing for a retry
         })
         .finally(() => {

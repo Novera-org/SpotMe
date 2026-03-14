@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useSession } from "@/lib/auth/client";
 import { migrateGuestToUser } from "@/actions/guests";
+import { processLogger } from "@/lib/logger";
 
 /**
  * Hook that automatically migrates guest data to the user account
@@ -28,7 +29,7 @@ export function useAuthWithGuestMigration() {
           migratedUserIdRef.current = userId;
         })
         .catch((error) => {
-          console.error("[guest-migration] Failed to migrate guest data:", error);
+          processLogger.error("[guest-migration] Failed to migrate guest data:", error);
         })
         .finally(() => {
           inFlightUserIdRef.current = null;

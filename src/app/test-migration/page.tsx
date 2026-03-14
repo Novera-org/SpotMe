@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/client";
 import { createTestData, getSessionData } from "@/actions/test-data";
+import { processLogger } from "@/lib/logger";
 
 interface SessionItem {
   id: string;
@@ -42,7 +43,7 @@ export default function TestMigrationPage() {
       const res = await getSessionData();
       setData(res as TestMigrationData);
     } catch (e) {
-      console.error(e);
+      processLogger.error(e as string);
     } finally {
       setLoading(false);
     }
