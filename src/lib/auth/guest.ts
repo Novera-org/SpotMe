@@ -1,5 +1,3 @@
-"use server";
-
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
