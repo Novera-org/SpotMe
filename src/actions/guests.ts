@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { guests, searchSessions, downloads } from "@/lib/db/schema";
 import { getCurrentGuest, clearGuestCookie } from "@/lib/auth/guest";
 import { getServerSession } from "@/lib/auth/helpers";
+import { processLogger, redactId } from "@/lib/logger";
 
 /**
  * Migrates all guest activity (search sessions, downloads) to a user account.
@@ -17,7 +18,7 @@ export async function migrateGuestToUser() {
     // 0. Resolve the authenticated user on the server
     const session = await getServerSession();
     if (!session?.user?.id) {
-      console.error("[migration] Unauthorized: No active session found.");
+      processLogger.error("[migration] Unauthorized: No active session found.");
       return {
         migrated: false,
         error: "Unauthorized",
@@ -27,13 +28,13 @@ export async function migrateGuestToUser() {
     }
 
     const userId = session.user.id;
-    console.log(`[migration] Starting migration. Authenticated User ID: ${userId}`);
+    processLogger.info(`[migration] Starting migration for user: ${redactId(userId)}`);
     
     // 1. Get guest from cookie
     const guest = await getCurrentGuest();
 
     if (!guest) {
-      console.log("[migration] No active guest session found in cookies. Nothing to migrate.");
+      processLogger.info("[migration] No active guest session found in cookies. Nothing to migrate.");
       return {
         migrated: false,
         searchSessionsMigrated: 0,
@@ -41,7 +42,7 @@ export async function migrateGuestToUser() {
       };
     }
 
-    console.log(`[migration] Found guest in DB: ${guest.id}. Starting transactional transfer...`);
+    processLogger.info(`[migration] Found guest in DB: ${redactId(guest.id)}. Starting transactional transfer...`);
     
     // 2. Perform updates and deletion sequentially
     // (We use sequential steps because neon-http doesn't support transactions)
@@ -71,13 +72,13 @@ export async function migrateGuestToUser() {
     const migratedSessionsCount = updatedSessions.length;
     const migratedDownloadsCount = updatedDownloads.length;
 
-    console.log(`[migration] Successfully moved ${migratedSessionsCount} sessions and ${migratedDownloadsCount} downloads.`);
+    processLogger.info(`[migration] Successfully moved ${migratedSessionsCount} sessions and ${migratedDownloadsCount} downloads.`);
 
     // 4. Clear cookie and cache only after successful commit
     await clearGuestCookie();
-    console.log("[migration] Guest cookie cleared.");
+    processLogger.info("[migration] Guest cookie cleared.");
     revalidatePath("/");
-    console.log("[migration] Path revalidated. Migration complete.");
+    processLogger.info("[migration] Path revalidated. Migration complete.");
 
     return {
       migrated: true,
@@ -85,11 +86,11 @@ export async function migrateGuestToUser() {
       downloadsMigrated: migratedDownloadsCount,
     };
   } catch (error) {
-    console.error("[migration] FATAL ERROR during migration:", error);
+    processLogger.error("[migration] FATAL ERROR during migration:", error);
     // Return a safe error response instead of crashing
     return {
       migrated: false,
-      error: error instanceof Error ? error.message : "Unknown migration error",
+      error: "An unexpected error occurred",
       searchSessionsMigrated: 0,
       downloadsMigrated: 0,
     };

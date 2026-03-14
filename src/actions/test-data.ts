@@ -4,12 +4,13 @@ import { db } from "@/lib/db";
 import { user, albums, searchSessions, images, downloads } from "@/lib/db/schema";
 import { requireIdentity, getCurrentIdentity } from "@/lib/auth/identity";
 import { eq } from "drizzle-orm";
+import { processLogger, redactId } from "@/lib/logger";
 
 function ensureTestDataAllowed() {
   const isDev = process.env.NODE_ENV === "development";
   const isAllowed = process.env.ALLOW_TEST_DATA === "true";
 
-  console.log(`[test-data] Environment check: NODE_ENV=${process.env.NODE_ENV}, ALLOW_TEST_DATA=${process.env.ALLOW_TEST_DATA}, isDev=${isDev}, isAllowed=${isAllowed}`);
+  processLogger.info(`[test-data] Environment check: NODE_ENV=${process.env.NODE_ENV}, ALLOW_TEST_DATA=${process.env.ALLOW_TEST_DATA}, isDev=${isDev}, isAllowed=${isAllowed}`);
 
   if (!isDev && !isAllowed) {
     throw new Error("UNAUTHORIZED: Test data creation is disabled in this environment.");

@@ -9,6 +9,7 @@ export function GuestMigrationHandler() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const migratedUserId = useRef<string | null>(null);
+  const inFlightUserId = useRef<string | null>(null);
 
   useEffect(() => {
     // Wait for session loading to finish before deciding
@@ -16,16 +17,20 @@ export function GuestMigrationHandler() {
 
     const userId = session?.user?.id;
 
-    // Trigger migration if we have a user AND we haven't successfully migrated for this specific user yet
-    if (userId && migratedUserId.current !== userId) {
-      console.log(`[guest-migration] New user session detected: ${userId}. Triggering migration...`);
+    // Trigger migration if:
+    // 1. We have a userId
+    // 2. We haven't successfully migrated for this user yet
+    // 3. We don't already have an in-flight migration for this user
+    if (userId && migratedUserId.current !== userId && inFlightUserId.current !== userId) {
+      
+
+      inFlightUserId.current = userId;
       
       migrateGuestToUser()
         .then((res) => {
           console.log("[guest-migration] Migration process finished. Result:", res);
           
           // Only mark as migrated for this user if the process completed successfully
-          // (Whether data was actually moved or not, we consider the 'attempt' for this user done)
           migratedUserId.current = userId;
 
           if (res.migrated) {
@@ -35,7 +40,10 @@ export function GuestMigrationHandler() {
         })
         .catch((error) => {
           console.error("[guest-migration] FATAL: Migration action failed:", error);
-          // We do NOT set migratedUserId.current here, allowing for a retry on the next re-render or session change
+          // We do NOT set migratedUserId.current here, allowing for a retry
+        })
+        .finally(() => {
+          inFlightUserId.current = null;
         });
     }
   }, [session?.user?.id, isPending, router]);

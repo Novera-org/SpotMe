@@ -3,6 +3,7 @@ import { lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { guests } from "@/lib/db/schema";
 import { GUEST_SESSION_MAX_AGE } from "@/config/constants";
+import { processLogger } from "@/lib/logger";
 
 /**
  * GET /api/cron/cleanup-guests
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ deleted: result.rowCount });
   } catch (error) {
-    console.error(
+    processLogger.error(
       `[cron-cleanup-guests] Failed to delete guests. Cutoff: ${cutoff.toISOString()}`,
       error
     );

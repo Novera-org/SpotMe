@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { signInSchema, signUpSchema } from "@/lib/validations/auth";
+import { processLogger } from "@/lib/logger";
 
 export interface AuthActionState {
   error: string | null;
@@ -33,7 +34,7 @@ export async function signInAction(
       headers: await headers(),
     });
   } catch (err) {
-    console.error("[signInAction] Sign-in failed:", err);
+    processLogger.error("[signInAction] Sign-in failed:", err);
     return { error: "Invalid email or password" };
   }
 
@@ -72,7 +73,7 @@ export async function signUpAction(
       headers: await headers(),
     });
   } catch (err: unknown) {
-    console.error("[signUpAction] Sign-up failed:", err);
+    processLogger.error("[signUpAction] Sign-up failed:", err);
 
     // Check for unique constraint violation (email already exists)
     const message =
