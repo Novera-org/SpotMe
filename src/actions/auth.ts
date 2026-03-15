@@ -25,8 +25,9 @@ export async function signInAction(
     return { error: parsed.error.issues[0].message };
   }
 
+  let session;
   try {
-    await auth.api.signInEmail({
+    session = await auth.api.signInEmail({
       body: {
         email: parsed.data.email,
         password: parsed.data.password,
@@ -38,12 +39,13 @@ export async function signInAction(
     return { error: "Invalid email or password" };
   }
 
-  // Validate callbackUrl to prevent open redirects
-  const rawCallback = (formData.get("callbackUrl") as string) || "/dashboard";
+  // Redirect based on role: admins → dashboard, users → account
+  const defaultRedirect = session?.user?.role === "admin" ? "/dashboard" : "/account";
+  const rawCallback = (formData.get("callbackUrl") as string) || defaultRedirect;
   const callbackUrl =
     rawCallback.startsWith("/") && !rawCallback.startsWith("//")
       ? rawCallback
-      : "/dashboard";
+      : defaultRedirect;
   redirect(callbackUrl);
 }
 
@@ -63,8 +65,9 @@ export async function signUpAction(
     return { error: parsed.error.issues[0].message };
   }
 
+  let session;
   try {
-    await auth.api.signUpEmail({
+    session = await auth.api.signUpEmail({
       body: {
         name: parsed.data.name,
         email: parsed.data.email,
@@ -83,7 +86,8 @@ export async function signUpAction(
     return { error: message };
   }
 
-  redirect("/dashboard");
+  // Redirect based on role: admins → dashboard, users → account
+  redirect(session?.user?.role === "admin" ? "/dashboard" : "/account");
 }
 
 export async function signOutAction(): Promise<void> {
