@@ -5,13 +5,12 @@ import { ALBUM_STATUS } from "@/config/constants";
 export const createAlbumSchema = z.object({
   title: z
     .string()
-    .trim()
-    .min(2, "Title must be at least 2 characters")
-    .max(100, "Title must be at most 100 characters"),
+    .max(100, "Title must be at most 100 characters")
+    .refine((s) => s.trim().length >= 2, "Title must be at least 2 non-whitespace characters"),
   description: z
     .string()
-    .trim()
     .max(500, "Description must be at most 500 characters")
+    .refine((s) => s === "" || s.trim().length > 0, "Description cannot be only whitespace")
     .optional(),
 });
 
@@ -20,14 +19,13 @@ export const updateAlbumSchema = z.object({
   id: z.string().uuid(),
   title: z
     .string()
-    .trim()
-    .min(2, "Title must be at least 2 characters")
     .max(100, "Title must be at most 100 characters")
+    .refine((s) => s.trim().length >= 2, "Title must be at least 2 non-whitespace characters")
     .optional(),
   description: z
     .string()
-    .trim()
     .max(500, "Description must be at most 500 characters")
+    .refine((s) => s === "" || s.trim().length > 0, "Description cannot be only whitespace")
     .optional(),
   status: z
     .enum([ALBUM_STATUS.DRAFT, ALBUM_STATUS.ACTIVE, ALBUM_STATUS.ARCHIVED])
@@ -50,8 +48,8 @@ export const createShareLinkSchema = z.object({
   albumId: z.string().uuid(),
   label: z
     .string()
-    .trim()
     .max(50, "Label must be at most 50 characters")
+    .refine((s) => s === "" || s.trim().length > 0, "Label cannot be only whitespace")
     .optional(),
   expiresAt: z.date().nullable().optional(),
 });
