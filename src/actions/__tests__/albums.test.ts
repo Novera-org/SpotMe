@@ -38,7 +38,10 @@ mock.module("slugify", () => ({
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 
 // Mock DB
-const mockDb = {
+const mockDb: any = {
+  transaction: mock(async (cb: (tx: any) => Promise<any>) => {
+    return await cb(mockDb);
+  }),
   insert: mock(() => ({
     values: mock(() => ({
       returning: mock(async () => [{ id: VALID_UUID, slug: "test-title-test6" }]),
