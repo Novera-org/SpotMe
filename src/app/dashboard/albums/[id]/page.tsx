@@ -2,7 +2,7 @@ import { getAlbumById } from "@/actions/albums";
 import { getAlbumShareLinks } from "@/actions/share-links";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
 import { ShareLinkManager } from "@/components/albums/share-link-manager";
-import { APP_URL } from "@/config/constants";
+import { APP_URL, ALBUM_STATUS } from "@/config/constants";
 
 interface AlbumDetailPageProps {
   params: Promise<{ id: string }>;
@@ -39,16 +39,30 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
         </div>
       </div>
 
-      {/* Public URL */}
-      <section className="album-section">
-        <h3>Public Album URL</h3>
-        <code className="album-url-block">{publicUrl}</code>
-      </section>
+      {/* Public URL & Share Links (Gated) */}
+      {album.status === ALBUM_STATUS.ACTIVE ? (
+        <>
+          <section className="album-section">
+            <h3>Public Album URL</h3>
+            <code className="album-url-block">{publicUrl}</code>
+          </section>
 
-      {/* Share Links */}
-      <section className="album-section">
-        <ShareLinkManager albumId={album.id} shareLinks={links} />
-      </section>
+          <section className="album-section">
+            <ShareLinkManager albumId={album.id} shareLinks={links} />
+          </section>
+        </>
+      ) : (
+        <section className="album-section">
+          <h3>Sharing</h3>
+          <div className="status-notice">
+            <p>
+              Sharing tools is unavailable because this album is currently in{" "}
+              <strong>{album.status}</strong> status. activation is required
+              to generate public URLs or share links.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Images Placeholder */}
       <section className="album-section">

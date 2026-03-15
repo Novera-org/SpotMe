@@ -5,13 +5,14 @@ import { ALBUM_STATUS } from "@/config/constants";
 export const createAlbumSchema = z.object({
   title: z
     .string()
+    .trim()
     .min(2, "Title must be at least 2 characters")
     .max(100, "Title must be at most 100 characters"),
   description: z
     .string()
+    .trim()
     .max(500, "Description must be at most 500 characters")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
 });
 
 // ─── Update Album ────────────────────────────────────────────────
@@ -19,14 +20,15 @@ export const updateAlbumSchema = z.object({
   id: z.string().uuid(),
   title: z
     .string()
+    .trim()
     .min(2, "Title must be at least 2 characters")
     .max(100, "Title must be at most 100 characters")
     .optional(),
   description: z
     .string()
+    .trim()
     .max(500, "Description must be at most 500 characters")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
   status: z
     .enum([ALBUM_STATUS.DRAFT, ALBUM_STATUS.ACTIVE, ALBUM_STATUS.ARCHIVED])
     .optional(),
@@ -46,7 +48,11 @@ export const updateAlbumSettingsSchema = z.object({
 // ─── Create Share Link ───────────────────────────────────────────
 export const createShareLinkSchema = z.object({
   albumId: z.string().uuid(),
-  label: z.string().max(50, "Label must be at most 50 characters").optional().or(z.literal("")),
+  label: z
+    .string()
+    .trim()
+    .max(50, "Label must be at most 50 characters")
+    .optional(),
   expiresAt: z.date().nullable().optional(),
 });
 

@@ -34,6 +34,10 @@ export async function updateAlbumSettings(input: unknown) {
     .where(eq(albumSettings.albumId, albumId))
     .returning();
 
+  if (!updated) {
+    throw new Error("Failed to update album settings: Row not found");
+  }
+
   revalidatePath(`/dashboard/albums/${albumId}`);
 
   return updated;

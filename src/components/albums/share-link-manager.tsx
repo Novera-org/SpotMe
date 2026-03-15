@@ -54,7 +54,9 @@ export function ShareLinkManager({
   }
 
   async function handleCopy(code: string, linkId: string) {
-    const url = `${APP_URL}/album?ref=${code}`;
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : APP_URL;
+    const url = `${origin}/album?ref=${code}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopiedId(linkId);

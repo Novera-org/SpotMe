@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { albums, images, shareLinks } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, or, gte, isNull } from "drizzle-orm";
 import { ALBUM_STATUS } from "@/config/constants";
 
 export async function getPublicAlbum(slug: string) {
@@ -33,5 +33,11 @@ export async function trackShareLinkAccess(code: string) {
     .set({
       accessCount: sql`${shareLinks.accessCount} + 1`,
     })
-    .where(eq(shareLinks.code, code));
+    .where(
+      and(
+        eq(shareLinks.code, code),
+        eq(shareLinks.isActive, true),
+        or(isNull(shareLinks.expiresAt), gte(shareLinks.expiresAt, new Date()))
+      )
+    );
 }

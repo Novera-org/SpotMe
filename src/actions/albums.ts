@@ -29,19 +29,23 @@ export async function createAlbum(formData: FormData) {
 
   const slug = `${slugify(parsed.data.title, { lower: true, strict: true })}-${nanoid(6)}`;
 
-  const [newAlbum] = await db
-    .insert(albums)
-    .values({
-      adminId,
-      title: parsed.data.title,
-      description: parsed.data.description || null,
-      slug,
-    })
-    .returning();
+  const newAlbum = await db.transaction(async (tx) => {
+    const [album] = await tx
+      .insert(albums)
+      .values({
+        adminId,
+        title: parsed.data.title,
+        description: parsed.data.description || null,
+        slug,
+      })
+      .returning();
 
-  // Create default album settings row
-  await db.insert(albumSettings).values({
-    albumId: newAlbum.id,
+    // Create default album settings row
+    await tx.insert(albumSettings).values({
+      albumId: album.id,
+    });
+
+    return album;
   });
 
   revalidatePath("/dashboard");
