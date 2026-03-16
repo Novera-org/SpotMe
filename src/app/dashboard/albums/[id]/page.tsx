@@ -4,6 +4,7 @@ import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
 import { ShareLinkManager } from "@/components/albums/share-link-manager";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 interface AlbumDetailPageProps {
   params: Promise<{ id: string }>;
@@ -31,6 +32,23 @@ export default async function AlbumDetailPage({
 
   return (
     <div className="dashboard-page">
+      {/* Back Button */}
+      <div style={{ marginBottom: "1rem" }}>
+        <Link
+          href="/dashboard"
+          style={{
+            fontSize: "0.875rem",
+            color: "var(--muted)",
+            textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.25rem",
+          }}
+        >
+          &larr; Back to Dashboard
+        </Link>
+      </div>
+
       {/* Album Header */}
       <div className="album-detail-header">
         <div>

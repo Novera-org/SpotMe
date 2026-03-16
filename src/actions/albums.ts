@@ -26,8 +26,9 @@ export async function createAlbum(formData: FormData) {
 
   const slug = `${slugify(parsed.data.title, { lower: true, strict: true })}-${nanoid(6)}`;
 
-  const newAlbum = await db.transaction(async (tx) => {
-    const [album] = await tx
+  let album;
+  try {
+    const [insertedAlbum] = await db
       .insert(albums)
       .values({
         adminId,
@@ -37,16 +38,18 @@ export async function createAlbum(formData: FormData) {
       })
       .returning();
 
+    album = insertedAlbum;
+
     // Create default album settings row
-    await tx.insert(albumSettings).values({
+    await db.insert(albumSettings).values({
       albumId: album.id,
     });
-
-    return album;
-  });
+  } catch (error) {
+    return { error: "Failed to create album. Please try again." };
+  }
 
   revalidatePath("/dashboard");
-  redirect(`/dashboard/albums/${newAlbum.id}`);
+  redirect(`/dashboard/albums/${album.id}`);
 }
 
 export async function updateAlbum(input: unknown) {
