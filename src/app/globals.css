@@ -8,6 +8,16 @@
   --error: #ef4444;
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
+
+  /* Badge colors */
+  --badge-draft-bg: color-mix(in srgb, #eab308 15%, transparent);
+  --badge-draft-fg: #a16207;
+  --badge-active-bg: color-mix(in srgb, #10b981 15%, transparent);
+  --badge-active-fg: #047857;
+  --badge-archived-bg: color-mix(in srgb, #6b7280 15%, transparent);
+  --badge-archived-fg: #374151;
+  --badge-unknown-bg: color-mix(in srgb, #9ca3af 15%, transparent);
+  --badge-unknown-fg: #6b7280;
 }
 
 @theme inline {
@@ -26,6 +36,16 @@
     --error: #f87171;
     --primary: #3b82f6;
     --primary-hover: #2563eb;
+
+    /* Badge colors – dark mode */
+    --badge-draft-bg: color-mix(in srgb, #eab308 20%, transparent);
+    --badge-draft-fg: #fbbf24;
+    --badge-active-bg: color-mix(in srgb, #10b981 20%, transparent);
+    --badge-active-fg: #34d399;
+    --badge-archived-bg: color-mix(in srgb, #6b7280 20%, transparent);
+    --badge-archived-fg: #d1d5db;
+    --badge-unknown-bg: color-mix(in srgb, #9ca3af 20%, transparent);
+    --badge-unknown-fg: #e5e7eb;
   }
 }
 
@@ -270,23 +290,23 @@ body {
 }
 
 .badge-draft {
-  background: color-mix(in srgb, #eab308 15%, transparent);
-  color: #a16207;
+  background: var(--badge-draft-bg);
+  color: var(--badge-draft-fg);
 }
 
 .badge-active {
-  background: color-mix(in srgb, #10b981 15%, transparent);
-  color: #047857;
+  background: var(--badge-active-bg);
+  color: var(--badge-active-fg);
 }
 
 .badge-archived {
-  background: color-mix(in srgb, #6b7280 15%, transparent);
-  color: #374151;
+  background: var(--badge-archived-bg);
+  color: var(--badge-archived-fg);
 }
 
 .badge-unknown {
-  background: color-mix(in srgb, #9ca3af 15%, transparent);
-  color: #6b7280;
+  background: var(--badge-unknown-bg);
+  color: var(--badge-unknown-fg);
 }
 
 /* Status Notice */

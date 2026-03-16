@@ -3,15 +3,29 @@ import { getAlbumShareLinks } from "@/actions/share-links";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
 import { ShareLinkManager } from "@/components/albums/share-link-manager";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
+import { notFound } from "next/navigation";
 
 interface AlbumDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) {
+export default async function AlbumDetailPage({
+  params,
+}: AlbumDetailPageProps) {
   const { id } = await params;
-  const album = await getAlbumById(id);
-  const links = await getAlbumShareLinks(id);
+
+  let album;
+  try {
+    album = await getAlbumById(id);
+  } catch (err) {
+    if (err instanceof Error && /not found|access denied/i.test(err.message)) {
+      notFound();
+    }
+    throw err;
+  }
+
+  const links =
+    album.status === ALBUM_STATUS.ACTIVE ? await getAlbumShareLinks(id) : [];
 
   const publicUrl = `${APP_URL}/album/${album.slug}`;
 
@@ -20,7 +34,9 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
       {/* Album Header */}
       <div className="album-detail-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+          >
             <h2 className="dashboard-page-title">{album.title}</h2>
             <AlbumStatusBadge status={album.status} />
           </div>
@@ -48,7 +64,11 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
           </section>
 
           <section className="album-section">
-            <ShareLinkManager albumId={album.id} slug={album.slug} shareLinks={links} />
+            <ShareLinkManager
+              albumId={album.id}
+              slug={album.slug}
+              shareLinks={links}
+            />
           </section>
         </>
       ) : (
@@ -57,8 +77,8 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
           <div className="status-notice">
             <p>
               Sharing is unavailable because this album is currently in{" "}
-              <strong>{album.status}</strong> status. Activation is required
-              to generate public URLs or share links.
+              <strong>{album.status}</strong> status. Activation is required to
+              generate public URLs or share links.
             </p>
           </div>
         </section>

@@ -3,10 +3,7 @@
 import { db } from "@/lib/db";
 import { albums, albumSettings } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/helpers";
-import {
-  createAlbumSchema,
-  updateAlbumSchema,
-} from "@/lib/validations/albums";
+import { createAlbumSchema, updateAlbumSchema } from "@/lib/validations/albums";
 import slugify from "slugify";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
@@ -18,8 +15,8 @@ export async function createAlbum(formData: FormData) {
   const adminId = session.user.id;
 
   const raw = {
-    title: formData.get("title") as string,
-    description: formData.get("description") as string,
+    title: (formData.get("title") as string) ?? "",
+    description: (formData.get("description") as string) ?? "",
   };
 
   const parsed = createAlbumSchema.safeParse(raw);
