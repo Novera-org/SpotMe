@@ -17,11 +17,13 @@ interface ShareLink {
 
 interface ShareLinkManagerProps {
   albumId: string;
+  slug: string;
   shareLinks: ShareLink[];
 }
 
 export function ShareLinkManager({
   albumId,
+  slug,
   shareLinks: initialLinks,
 }: ShareLinkManagerProps) {
   const [links, setLinks] = useState(initialLinks);
@@ -56,7 +58,7 @@ export function ShareLinkManager({
   async function handleCopy(code: string, linkId: string) {
     const origin =
       typeof window !== "undefined" ? window.location.origin : APP_URL;
-    const url = `${origin}/album?ref=${code}`;
+    const url = `${origin}/album/${slug}?ref=${code}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopiedId(linkId);

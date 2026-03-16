@@ -284,6 +284,21 @@ body {
   color: #374151;
 }
 
+.badge-unknown {
+  background: color-mix(in srgb, #9ca3af 15%, transparent);
+  color: #6b7280;
+}
+
+/* Status Notice */
+.status-notice {
+  padding: 1rem 1.25rem;
+  background: color-mix(in srgb, #eab308 8%, transparent);
+  border: 1px solid color-mix(in srgb, #eab308 25%, transparent);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
 /* Album Grid */
 .album-grid {
   display: grid;

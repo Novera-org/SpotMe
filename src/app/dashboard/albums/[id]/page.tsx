@@ -48,7 +48,7 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
           </section>
 
           <section className="album-section">
-            <ShareLinkManager albumId={album.id} shareLinks={links} />
+            <ShareLinkManager albumId={album.id} slug={album.slug} shareLinks={links} />
           </section>
         </>
       ) : (
@@ -56,8 +56,8 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
           <h3>Sharing</h3>
           <div className="status-notice">
             <p>
-              Sharing tools is unavailable because this album is currently in{" "}
-              <strong>{album.status}</strong> status. activation is required
+              Sharing is unavailable because this album is currently in{" "}
+              <strong>{album.status}</strong> status. Activation is required
               to generate public URLs or share links.
             </p>
           </div>
