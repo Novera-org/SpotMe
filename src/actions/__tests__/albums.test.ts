@@ -1,5 +1,4 @@
-import { config } from "dotenv";
-config({ path: ".env.local" });
+import "./setup";
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { ALBUM_STATUS } from "@/config/constants";
 
