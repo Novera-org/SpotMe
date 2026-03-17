@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { albums, albumSettings } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/helpers";
 import { updateAlbumSettingsSchema } from "@/lib/validations/albums";
+import { verifyAlbumOwnership } from "./albums";
 import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
 
@@ -19,14 +20,7 @@ export async function updateAlbumSettings(input: unknown) {
   const { albumId, ...data } = parsed.data;
 
   // Verify ownership of the album
-  const [album] = await db
-    .select()
-    .from(albums)
-    .where(and(eq(albums.id, albumId), eq(albums.adminId, adminId)));
-
-  if (!album) {
-    throw new Error("Album not found or access denied");
-  }
+  await verifyAlbumOwnership(albumId, adminId);
 
   const [updated] = await db
     .update(albumSettings)

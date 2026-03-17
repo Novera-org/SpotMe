@@ -1,23 +1,24 @@
 import { ALBUM_STATUS } from "@/config/constants";
 import { AlbumStatus } from "@/types";
+import { Badge } from "@/components/ui/badge";
 
 interface AlbumStatusBadgeProps {
   status: AlbumStatus | string;
 }
 
 export function AlbumStatusBadge({ status }: AlbumStatusBadgeProps) {
-  let badgeClass = "badge badge-unknown";
+  let variant: "default" | "secondary" | "outline" | "destructive" = "destructive";
   let label = status;
 
   if (status === ALBUM_STATUS.ACTIVE) {
-    badgeClass = "badge badge-active";
+    variant = "default";
   } else if (status === ALBUM_STATUS.ARCHIVED) {
-    badgeClass = "badge badge-archived";
+    variant = "outline";
   } else if (status === ALBUM_STATUS.DRAFT) {
-    badgeClass = "badge badge-draft";
+    variant = "secondary";
   } else {
     label = "Unknown";
   }
 
-  return <span className={badgeClass}>{label}</span>;
+  return <Badge variant={variant} className="capitalize">{label}</Badge>;
 }

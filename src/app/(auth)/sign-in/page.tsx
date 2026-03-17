@@ -5,6 +5,9 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signInAction, type AuthActionState } from "@/actions/auth";
 import PasswordInput from "@/components/shared/password-input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function SignInPage() {
   const searchParams = useSearchParams();
@@ -15,32 +18,31 @@ export default function SignInPage() {
   >(signInAction, null);
 
   return (
-    <div className="auth-card">
-      <h1 className="auth-title">Sign In</h1>
-      <p className="auth-subtitle">Welcome back — sign in to your account.</p>
+    <div className="auth-card shadow-lg bg-card/50 backdrop-blur-md">
+      <h1 className="text-2xl font-serif font-bold text-foreground mb-1 tracking-tight">Sign In</h1>
+      <p className="text-muted-foreground text-sm mb-6">Welcome back — log in to your account.</p>
 
       <form action={formAction} className="auth-form">
         <input name="callbackUrl" type="hidden" value={callbackUrl} />
 
-        <div className="form-group">
-          <label htmlFor="email" className="form-label">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">
             Email
-          </label>
-          <input
+          </Label>
+          <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
             required
-            className="form-input"
             placeholder="you@example.com"
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="password" className="form-label">
+        <div className="space-y-1.5">
+          <Label htmlFor="password">
             Password
-          </label>
+          </Label>
           <PasswordInput
             id="password"
             name="password"
@@ -54,9 +56,9 @@ export default function SignInPage() {
           </div>
         )}
 
-        <button type="submit" disabled={isPending} className="form-button">
+        <Button type="submit" disabled={isPending} className="w-full">
           {isPending ? "Signing in..." : "Sign In"}
-        </button>
+        </Button>
       </form>
 
       <p className="auth-footer">

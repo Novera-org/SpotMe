@@ -3,6 +3,10 @@
 import { useActionState } from "react";
 import { createAlbum } from "@/actions/albums";
 import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function NewAlbumPage() {
   const [error, formAction, isPending] = useActionState(
@@ -26,15 +30,14 @@ export default function NewAlbumPage() {
       <form action={formAction} className="auth-form" style={{ maxWidth: 500 }}>
         {error && <div className="form-error">{error}</div>}
 
-        <div className="form-group">
-          <label htmlFor="title" className="form-label">
+        <div className="space-y-1.5">
+          <Label htmlFor="title">
             Title *
-          </label>
-          <input
+          </Label>
+          <Input
             id="title"
             name="title"
             type="text"
-            className="form-input"
             required
             minLength={2}
             maxLength={100}
@@ -42,18 +45,17 @@ export default function NewAlbumPage() {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="description" className="form-label">
+        <div className="space-y-1.5 mt-4">
+          <Label htmlFor="description">
             Description
-          </label>
-          <textarea
+          </Label>
+          <Textarea
             id="description"
             name="description"
-            className="form-input"
             rows={3}
             maxLength={500}
             placeholder="Optional description for this album..."
-            style={{ resize: "vertical" }}
+            className="resize-y"
           />
         </div>
 
@@ -64,18 +66,10 @@ export default function NewAlbumPage() {
             marginTop: "0.5rem",
           }}
         >
-          <button type="submit" className="form-button" disabled={isPending}>
+          <Button type="submit" disabled={isPending}>
             {isPending ? "Creating..." : "Create Album"}
-          </button>
-          <Link
-            href="/dashboard"
-            className="form-button"
-            style={{
-              background: "transparent",
-              color: "var(--foreground)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          </Button>
+          <Link href="/dashboard" className={buttonVariants({ variant: "outline" })}>
             Cancel
           </Link>
         </div>

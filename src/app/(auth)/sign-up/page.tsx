@@ -4,6 +4,9 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { signUpAction, type AuthActionState } from "@/actions/auth";
 import PasswordInput from "@/components/shared/password-input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function SignUpPage() {
   const [state, formAction, isPending] = useActionState<
@@ -12,16 +15,16 @@ export default function SignUpPage() {
   >(signUpAction, null);
 
   return (
-    <div className="auth-card">
-      <h1 className="auth-title">Create Account</h1>
-      <p className="auth-subtitle">Get started by creating a new account.</p>
+    <div className="auth-card shadow-lg bg-card/50 backdrop-blur-md">
+      <h1 className="text-2xl font-serif font-bold text-foreground mb-1 tracking-tight">Create Account</h1>
+      <p className="text-muted-foreground text-sm mb-6">Get started by setting up your profile.</p>
 
       <form action={formAction} className="auth-form">
-        <div className="form-group">
-          <label htmlFor="name" className="form-label">
+        <div className="space-y-1.5">
+          <Label htmlFor="name">
             Name
-          </label>
-          <input
+          </Label>
+          <Input
             id="name"
             name="name"
             type="text"
@@ -29,30 +32,28 @@ export default function SignUpPage() {
             required
             minLength={2}
             maxLength={100}
-            className="form-input"
             placeholder="Your name"
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="email" className="form-label">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">
             Email
-          </label>
-          <input
+          </Label>
+          <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
             required
-            className="form-input"
             placeholder="you@example.com"
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="password" className="form-label">
+        <div className="space-y-1.5">
+          <Label htmlFor="password">
             Password
-          </label>
+          </Label>
           <PasswordInput
             id="password"
             name="password"
@@ -61,10 +62,10 @@ export default function SignUpPage() {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="confirmPassword" className="form-label">
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword">
             Confirm Password
-          </label>
+          </Label>
           <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
@@ -79,9 +80,9 @@ export default function SignUpPage() {
           </div>
         )}
 
-        <button type="submit" disabled={isPending} className="form-button">
+        <Button type="submit" disabled={isPending} className="w-full">
           {isPending ? "Creating account..." : "Sign Up"}
-        </button>
+        </Button>
       </form>
 
       <p className="auth-footer">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 
 interface PasswordInputProps {
   id: string;
@@ -22,8 +23,8 @@ export default function PasswordInput({
   const [visible, setVisible] = useState(false);
 
   return (
-    <div className="input-password-wrapper">
-      <input
+    <div className="relative flex items-center w-full">
+      <Input
         id={id}
         name={name}
         type={visible ? "text" : "password"}
@@ -31,12 +32,12 @@ export default function PasswordInput({
         required
         minLength={minLength}
         maxLength={maxLength}
-        className="form-input"
         placeholder={placeholder}
+        className="pr-10"
       />
       <button
         type="button"
-        className="password-toggle"
+        className="absolute right-2.5 p-1 text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setVisible(!visible)}
         aria-label={visible ? "Hide password" : "Show password"}
       >
