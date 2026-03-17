@@ -93,7 +93,7 @@ export default async function AlbumDetailPage({
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground">Public Album URL</h3>
-                <code className="block p-3 bg-muted/20 border border-border rounded-lg text-sm select-all text-primary-hover font-mono break-all">
+                <code className="block p-3 bg-muted/20 border border-border rounded-lg text-sm select-all text-primary font-mono break-all">
                   {publicUrl}
                 </code>
               </div>
