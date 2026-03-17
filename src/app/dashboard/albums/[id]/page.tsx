@@ -5,6 +5,15 @@ import { ShareLinkManager } from "@/components/albums/share-link-manager";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Image as ImageIcon, Settings2, Share2, Info } from "lucide-react";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface AlbumDetailPageProps {
   params: Promise<{ id: string }>;
@@ -31,121 +40,153 @@ export default async function AlbumDetailPage({
   const publicUrl = `${APP_URL}/album/${album.slug}`;
 
   return (
-    <div className="dashboard-page">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
       {/* Back Button */}
-      <div style={{ marginBottom: "1rem" }}>
+      <div className="mb-8">
         <Link
           href="/dashboard"
-          style={{
-            fontSize: "0.875rem",
-            color: "var(--muted)",
-            textDecoration: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.25rem",
-          }}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          &larr; Back to Dashboard
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
         </Link>
       </div>
 
       {/* Album Header */}
-      <div className="album-detail-header">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-10">
         <div>
-          <div
-            style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
-          >
-            <h2 className="dashboard-page-title">{album.title}</h2>
+          <div className="flex flex-wrap items-center gap-3 mb-2">
+            <h1 className="text-3xl font-serif font-bold tracking-tight text-foreground balance-text">
+              {album.title}
+            </h1>
             <AlbumStatusBadge status={album.status} />
           </div>
           {album.description && (
-            <p className="dashboard-page-desc">{album.description}</p>
+            <p className="text-muted-foreground text-lg mb-3 max-w-2xl">
+              {album.description}
+            </p>
           )}
-          <p
-            style={{
-              fontSize: "0.75rem",
-              color: "var(--muted)",
-              marginTop: "0.5rem",
-            }}
-          >
-            Created on {new Date(album.createdAt).toLocaleDateString()}
+          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5" />
+            Created on {new Date(album.createdAt).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
           </p>
         </div>
       </div>
 
-      {/* Public URL & Share Links (Gated) */}
-      {album.status === ALBUM_STATUS.ACTIVE ? (
-        <>
-          <section className="album-section">
-            <h3>Public Album URL</h3>
-            <code className="album-url-block">{publicUrl}</code>
-          </section>
+      <div className="space-y-8">
+        {/* Public URL & Share Links (Gated) */}
+        {album.status === ALBUM_STATUS.ACTIVE ? (
+          <Card className="border-border">
+            <CardHeader className="bg-muted/10 border-b border-border">
+              <CardTitle className="flex items-center gap-2 text-xl font-serif">
+                <Share2 className="h-5 w-5 text-primary" />
+                Sharing & Access
+              </CardTitle>
+              <CardDescription>
+                Manage public links and access for this album.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">Public Album URL</h3>
+                <code className="block p-3 bg-muted/20 border border-border rounded-lg text-sm select-all text-primary-hover font-mono break-all">
+                  {publicUrl}
+                </code>
+              </div>
+              <ShareLinkManager
+                albumId={album.id}
+                slug={album.slug}
+                shareLinks={links}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-serif">
+                <Share2 className="h-5 w-5" />
+                Sharing
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm text-yellow-500 font-medium">
+                Sharing is unavailable because this album is currently in{" "}
+                <span className="font-bold underline decoration-yellow-500/30 underline-offset-4">{album.status}</span> status. Activation is required to
+                generate public URLs or share links.
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-          <section className="album-section">
-            <ShareLinkManager
-              albumId={album.id}
-              slug={album.slug}
-              shareLinks={links}
-            />
-          </section>
-        </>
-      ) : (
-        <section className="album-section">
-          <h3>Sharing</h3>
-          <div className="status-notice">
-            <p>
-              Sharing is unavailable because this album is currently in{" "}
-              <strong>{album.status}</strong> status. Activation is required to
-              generate public URLs or share links.
-            </p>
-          </div>
-        </section>
-      )}
+        {/* Images Placeholder */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl font-serif">
+              <ImageIcon className="h-5 w-5 text-primary" />
+              Images
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-lg bg-card/50">
+              <ImageIcon className="h-10 w-10 text-muted-foreground/50 mb-3" />
+              <p className="text-muted-foreground font-medium">
+                Image upload will be available in the next update.
+              </p>
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                Stay tuned for the new drag-and-drop gallery interface.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Images Placeholder */}
-      <section className="album-section">
-        <h3>Images</h3>
-        <p style={{ color: "var(--muted)", fontSize: "0.875rem" }}>
-          Image upload will be available in the next update.
-        </p>
-      </section>
-
-      {/* Settings Display */}
-      {album.settings && (
-        <section className="album-section">
-          <h3>Settings</h3>
-          <div className="settings-grid">
-            <div className="settings-item">
-              <span className="settings-label">Allow Downloads</span>
-              <span>{album.settings.allowDownloads ? "Yes" : "No"}</span>
-            </div>
-            <div className="settings-item">
-              <span className="settings-label">Watermark</span>
-              <span>{album.settings.watermark ? "Yes" : "No"}</span>
-            </div>
-            <div className="settings-item">
-              <span className="settings-label">Require Login</span>
-              <span>{album.settings.requireLogin ? "Yes" : "No"}</span>
-            </div>
-            <div className="settings-item">
-              <span className="settings-label">Max Selfies</span>
-              <span>{album.settings.maxSelfies}</span>
-            </div>
-            <div className="settings-item">
-              <span className="settings-label">Match Threshold</span>
-              <span>{album.settings.matchThreshold}</span>
-            </div>
-            <div className="settings-item">
-              <span className="settings-label">Link Expires</span>
-              <span>
-                {album.settings.linkExpiresAt
-                  ? new Date(album.settings.linkExpiresAt).toLocaleDateString()
-                  : "Never"}
-              </span>
-            </div>
-          </div>
-        </section>
-      )}
+        {/* Settings Display */}
+        {album.settings && (
+          <Card className="border-border bg-card overflow-hidden">
+            <CardHeader className="bg-muted/10 border-b border-border">
+              <CardTitle className="flex items-center gap-2 text-xl font-serif">
+                <Settings2 className="h-5 w-5 text-primary" />
+                Configuration Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Allow Downloads</span>
+                  <div className="font-medium text-foreground">{album.settings.allowDownloads ? "Yes" : "No"}</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Watermark</span>
+                  <div className="font-medium text-foreground">{album.settings.watermark ? "Yes" : "No"}</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Require Login</span>
+                  <div className="font-medium text-foreground">{album.settings.requireLogin ? "Yes" : "No"}</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Max Selfies</span>
+                  <div className="font-medium text-foreground">{album.settings.maxSelfies}</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Match Threshold</span>
+                  <div className="font-medium text-foreground">{album.settings.matchThreshold}</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Link Expires</span>
+                  <div className="font-medium text-foreground">
+                    {album.settings.linkExpiresAt
+                      ? new Date(album.settings.linkExpiresAt).toLocaleDateString()
+                      : "Never"}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

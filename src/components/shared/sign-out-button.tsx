@@ -2,13 +2,14 @@
 
 import { signOutAction } from "@/actions/auth";
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui/button";
 
 function SignOutButtonInner() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="sign-out-button">
+    <Button type="submit" variant="outline" size="sm" disabled={pending}>
       {pending ? "Signing out..." : "Sign Out"}
-    </button>
+    </Button>
   );
 }
 

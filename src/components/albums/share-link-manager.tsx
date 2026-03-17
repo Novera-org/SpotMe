@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createShareLink, deactivateShareLink } from "@/actions/share-links";
 import { APP_URL } from "@/config/constants";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 interface ShareLink {
   id: string;
@@ -73,13 +74,12 @@ export function ShareLinkManager({
     <div className="share-links-section">
       <div className="share-links-header">
         <h3>Share Links</h3>
-        <button
-          className="form-button"
+        <Button
           onClick={handleCreate}
           disabled={isCreating}
         >
           {isCreating ? "Creating..." : "+ New Share Link"}
-        </button>
+        </Button>
       </div>
 
       {links.length === 0 ? (
@@ -101,27 +101,29 @@ export function ShareLinkManager({
                 </span>
               </div>
               <div className="share-link-actions">
-                <button
-                  className="btn-small"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleCopy(link.code, link.id)}
                 >
                   {copiedId === link.id ? "Copied!" : "Copy Link"}
-                </button>
+                </Button>
                 <a
                   href={`/api/qr/${link.code}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-small"
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
                 >
                   QR Code
                 </a>
                 {link.isActive && (
-                  <button
-                    className="btn-small btn-danger"
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={() => handleDeactivate(link.id)}
                   >
                     Deactivate
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

@@ -1,38 +1,43 @@
-@import "tailwindcss";
+const fs = require('fs');
+
+const cleanCSS = `@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Restoring the original dark theme as the default */
-  --background: oklch(0.145 0 0); /* Black / very dark gray */
-  --foreground: oklch(0.985 0 0); /* White */
+  /* Twilight Slate Palette - RETURNING TO DARKER BASE */
+  --background: oklch(0.20 0.02 260);    /* Reverted to the darker blue-grey slate */
+  --foreground: oklch(0.98 0.01 260);    /* Bright crisp off-white for main text */
   
-  --card: oklch(0.205 0 0); /* Slightly lighter dark gray */
-  --card-foreground: oklch(0.985 0 0);
+  --card: oklch(0.25 0.025 260);         /* Elevated off the dark background specifically for cards */
+  --card-foreground: oklch(0.95 0.01 260);
   
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.25 0.025 260);
+  --popover-foreground: oklch(0.95 0.01 260);
   
-  --primary: oklch(0.6 0.15 260); /* A nice blue */
-  --primary-foreground: oklch(0.985 0 0);
+  /* Primary Accent: Restoring original vibrant indigo */
+  --primary: oklch(0.65 0.15 260);       
+  --primary-foreground: oklch(0.98 0.01 260);  /* Keeping text light on the primary button */
+  --primary-hover: oklch(0.7 0.15 260); 
+
+  /* Secondary & Muted */
+  --secondary: oklch(0.30 0.03 260);
+  --secondary-foreground: oklch(0.95 0.01 260);
   
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.30 0.03 260);
+  --muted-foreground: oklch(0.80 0.02 260); /* Brightened significantly so labels/descriptions are readable */
   
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.85 0 0); /* Highly readable light gray */
+  --accent: oklch(0.30 0.03 260);
+  --accent-foreground: oklch(0.95 0.01 260);
   
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.60 0.18 20);      
+  --error: oklch(0.60 0.18 20);
   
-  --destructive: oklch(0.6 0.15 20);
-  --error: oklch(0.6 0.15 20);
-  
-  --border: oklch(0.35 0 0); /* Clearly visible border */
-  --input: oklch(0.35 0 0);
-  --ring: oklch(0.6 0.15 260);
+  --border: oklch(0.35 0.05 260);        /* Visible borders that pop against the dark background */
+  --input: oklch(0.30 0.05 260);
+  --ring: oklch(0.65 0.15 260);
 
   /* Badge colors - Tweaked for contrast on slate */
   --badge-draft-bg: color-mix(in srgb, #fde047 25%, transparent);
@@ -100,16 +105,16 @@
   --radius-md: calc(var(--radius) * 0.75);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.5);
-}
-
-@keyframes fade-up {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
+  
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
@@ -120,13 +125,14 @@
   justify-content: center;
   min-height: 100vh;
   padding: 1rem;
+  background: radial-gradient(circle at top right, var(--card), var(--background)) fixed;
 }
 
 .auth-card {
   width: 100%;
   max-width: 400px;
   padding: 2.5rem 2rem;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
   border-radius: 1rem;
   background-color: var(--card);
 }
@@ -164,7 +170,7 @@
 }
 
 .auth-link:hover {
-  text-decoration: underline;
+  color: var(--primary-hover);
 }
 
 /* Dashboard Layout */
@@ -370,3 +376,6 @@
     text-wrap: balance;
   }
 }
+`;
+
+fs.writeFileSync('src/app/globals.css', cleanCSS);
