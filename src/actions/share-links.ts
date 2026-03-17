@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { albums, shareLinks } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/helpers";
 import { createShareLinkSchema } from "@/lib/validations/albums";
+import { verifyAlbumOwnership } from "./albums";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
@@ -20,14 +21,7 @@ export async function createShareLink(input: unknown) {
   const { albumId, ...data } = parsed.data;
 
   // Verify ownership of the album
-  const [album] = await db
-    .select()
-    .from(albums)
-    .where(and(eq(albums.id, albumId), eq(albums.adminId, adminId)));
-
-  if (!album) {
-    throw new Error("Album not found or access denied");
-  }
+  await verifyAlbumOwnership(albumId, adminId);
 
   const code = nanoid(10);
 
@@ -74,14 +68,7 @@ export async function getAlbumShareLinks(albumId: string) {
   const adminId = session.user.id;
 
   // Verify ownership
-  const [album] = await db
-    .select()
-    .from(albums)
-    .where(and(eq(albums.id, albumId), eq(albums.adminId, adminId)));
-
-  if (!album) {
-    throw new Error("Album not found or access denied");
-  }
+  await verifyAlbumOwnership(albumId, adminId);
 
   return db.query.shareLinks.findMany({
     where: eq(shareLinks.albumId, albumId),

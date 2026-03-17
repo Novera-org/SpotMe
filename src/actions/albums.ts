@@ -10,6 +10,19 @@ import { revalidatePath } from "next/cache";
 import { eq, and, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
+export async function verifyAlbumOwnership(albumId: string, adminId: string) {
+  const [album] = await db
+    .select()
+    .from(albums)
+    .where(and(eq(albums.id, albumId), eq(albums.adminId, adminId)));
+
+  if (!album) {
+    throw new Error("Album not found or access denied");
+  }
+
+  return album;
+}
+
 export async function createAlbum(formData: FormData) {
   const session = await requireAdmin();
   const adminId = session.user.id;
@@ -64,14 +77,7 @@ export async function updateAlbum(input: unknown) {
   const { id, ...data } = parsed.data;
 
   // Verify ownership
-  const [existing] = await db
-    .select()
-    .from(albums)
-    .where(and(eq(albums.id, id), eq(albums.adminId, adminId)));
-
-  if (!existing) {
-    throw new Error("Album not found or access denied");
-  }
+  await verifyAlbumOwnership(id, adminId);
 
   const [updated] = await db
     .update(albums)
@@ -90,14 +96,7 @@ export async function deleteAlbum(albumId: string) {
   const adminId = session.user.id;
 
   // Verify ownership
-  const [existing] = await db
-    .select()
-    .from(albums)
-    .where(and(eq(albums.id, albumId), eq(albums.adminId, adminId)));
-
-  if (!existing) {
-    throw new Error("Album not found or access denied");
-  }
+  await verifyAlbumOwnership(albumId, adminId);
 
   await db.delete(albums).where(eq(albums.id, albumId));
 
@@ -119,6 +118,10 @@ export async function getAlbumById(albumId: string) {
   const session = await requireAdmin();
   const adminId = session.user.id;
 
+  // Verify ownership first (which handles the not found / access denied logic)
+  await verifyAlbumOwnership(albumId, adminId);
+
+  // Then fetch with relationships
   const album = await db.query.albums.findFirst({
     where: and(eq(albums.id, albumId), eq(albums.adminId, adminId)),
     with: {
@@ -127,7 +130,7 @@ export async function getAlbumById(albumId: string) {
   });
 
   if (!album) {
-    throw new Error("Album not found or access denied");
+    throw new Error("Album not found"); // Should theoretically never hit this due to verification above
   }
 
   return album;
