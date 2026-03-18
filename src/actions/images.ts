@@ -8,7 +8,7 @@ import {
   uploadImageSchema,
   imageMetadataSchema,
 } from "@/lib/validations/images";
-import { generatePresignedUploadUrl, deleteFromR2 } from "@/lib/storage/upload";
+import { generatePresignedUploadUrl, deleteFromR2, getObjectMetadata } from "@/lib/storage/upload";
 import { revalidatePath } from "next/cache";
 import { eq, and, desc } from "drizzle-orm";
 import { albums } from "@/lib/db/schema";
@@ -65,37 +65,40 @@ export async function requestUploadUrls(fileInfos: FileInfo[]) {
     }
   }
 
-  // Generate presigned URLs and create DB records
-  const results: UploadUrlResult[] = [];
-
-  for (const file of fileInfos) {
-    const { uploadUrl, r2Key, r2Url } = await generatePresignedUploadUrl({
-      albumId: file.albumId,
-      filename: file.filename,
-      contentType: file.contentType,
-    });
-
-    const [imageRecord] = await db
-      .insert(images)
-      .values({
+  // 1. Generate all presigned URLs and collect metadata
+  const uploadData = await Promise.all(
+    fileInfos.map(async (file) => {
+      const { uploadUrl, r2Key, r2Url } = await generatePresignedUploadUrl({
         albumId: file.albumId,
-        r2Key,
-        r2Url,
         filename: file.filename,
-        status: "uploading",
-      })
-      .returning({ id: images.id });
+        contentType: file.contentType,
+      });
+      return { uploadUrl, r2Key, r2Url, filename: file.filename, albumId: file.albumId };
+    })
+  );
 
-    results.push({
-      imageId: imageRecord.id,
-      uploadUrl,
-      r2Key,
-      r2Url,
-      filename: file.filename,
-    });
-  }
+  // 2. Batch insert into database
+  const insertedRows = await db
+    .insert(images)
+    .values(
+      uploadData.map((data) => ({
+        albumId: data.albumId,
+        r2Key: data.r2Key,
+        r2Url: data.r2Url,
+        filename: data.filename,
+        status: "uploading" as const,
+      }))
+    )
+    .returning({ id: images.id });
 
-  return results;
+  // 3. Map returned IDs back to the results
+  return uploadData.map((data, index) => ({
+    imageId: insertedRows[index].id,
+    uploadUrl: data.uploadUrl,
+    r2Key: data.r2Key,
+    r2Url: data.r2Url,
+    filename: data.filename,
+  }));
 }
 
 // ─── Confirm Upload ──────────────────────────────────────────────
@@ -116,11 +119,13 @@ export async function confirmUpload(input: {
   }
 
   // Verify admin ownership via join: images → albums
+  // 1. Fetch image to get r2Key
   const [image] = await db
     .select({
       id: images.id,
       albumId: images.albumId,
       adminId: albums.adminId,
+      r2Key: images.r2Key,
     })
     .from(images)
     .innerJoin(albums, eq(images.albumId, albums.id))
@@ -132,7 +137,32 @@ export async function confirmUpload(input: {
     throw new Error("Image not found or access denied");
   }
 
-  // Atomic transaction for status update and metadata insertion
+  // 2. Verify object in storage
+  const storageMetadata = await getObjectMetadata(image.r2Key);
+
+  if (!storageMetadata) {
+    await db
+      .update(images)
+      .set({ status: "failed", updatedAt: new Date() })
+      .where(eq(images.id, image.id));
+    throw new Error("File not found in storage. Please try uploading again.");
+  }
+
+  // 3. Verify size and type match
+  if (
+    storageMetadata.contentLength !== parsed.data.fileSize ||
+    storageMetadata.contentType !== parsed.data.mimeType
+  ) {
+    await db
+      .update(images)
+      .set({ status: "failed", updatedAt: new Date() })
+      .where(eq(images.id, image.id));
+    throw new Error(
+      `Storage metadata mismatch (Size: ${storageMetadata.contentLength} vs ${parsed.data.fileSize}, Type: ${storageMetadata.contentType} vs ${parsed.data.mimeType})`
+    );
+  }
+
+  // 4. Atomic transaction for status update and metadata insertion
   await db.transaction(async (tx) => {
     // Update image status to "ready"
     await tx
@@ -174,14 +204,15 @@ export async function deleteImage(imageId: string) {
     throw new Error("Image not found or access denied");
   }
 
-  // Delete from R2 — don't block on errors
+  // 1. Delete from R2 - MUST succeed to proceed with DB cleanup
   try {
     await deleteFromR2(image.r2Key);
-  } catch {
-    // R2 deletion failed, but proceed with DB cleanup
+  } catch (error) {
+    console.error(`[deleteImage] Failed to delete from R2: ${image.r2Key}`, error);
+    throw new Error("Failed to delete the image from storage. The database record has been preserved.");
   }
 
-  // Delete from DB (cascade removes metadata, faces, etc.)
+  // 2. Delete from DB (cascade removes metadata, faces, etc.)
   await db.delete(images).where(eq(images.id, imageId));
 
   revalidatePath(`/dashboard/albums/${image.albumId}`);

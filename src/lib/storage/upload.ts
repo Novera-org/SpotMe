@@ -1,4 +1,4 @@
-import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { nanoid } from "nanoid";
 import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from "./r2";
@@ -52,4 +52,26 @@ export async function deleteFromR2(r2Key: string): Promise<void> {
   });
 
   await r2Client.send(command);
+}
+/**
+ * Fetch object metadata from R2 for verification.
+ */
+export async function getObjectMetadata(r2Key: string) {
+  const command = new HeadObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: r2Key,
+  });
+
+  try {
+    const response = await r2Client.send(command);
+    return {
+      contentLength: response.ContentLength,
+      contentType: response.ContentType,
+    };
+  } catch (error: any) {
+    if (error.name === "NotFound") {
+      return null;
+    }
+    throw error;
+  }
 }
