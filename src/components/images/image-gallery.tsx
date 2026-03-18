@@ -33,6 +33,11 @@ export function ImageGallery({
   const [isMoreModalOpen, setIsMoreModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Sync when initialImages prop changes (e.g., server refresh)
+  useEffect(() => {
+    setImageList(initialImages);
+  }, [initialImages]);
+
   // Sync real-time updates from uploader
   useEffect(() => {
     if (newImage) {
