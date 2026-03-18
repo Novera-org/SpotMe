@@ -7,6 +7,8 @@ import { verifyAlbumOwnership } from "@/actions/albums";
 import {
   uploadImageSchema,
   imageMetadataSchema,
+  imageIdSchema,
+  getAlbumImagesSchema,
 } from "@/lib/validations/images";
 import { generatePresignedUploadUrl, deleteFromR2, getObjectMetadata } from "@/lib/storage/upload";
 import { revalidatePath } from "next/cache";
@@ -185,6 +187,8 @@ export async function confirmUpload(input: {
 // ─── Delete Image ────────────────────────────────────────────────
 
 export async function deleteImage(imageId: string) {
+  const validatedId = imageIdSchema.parse(imageId);
+
   const session = await requireAdmin();
   const adminId = session.user.id;
 
@@ -197,7 +201,7 @@ export async function deleteImage(imageId: string) {
     })
     .from(images)
     .innerJoin(albums, eq(images.albumId, albums.id))
-    .where(and(eq(images.id, imageId), eq(albums.adminId, adminId)));
+    .where(and(eq(images.id, validatedId), eq(albums.adminId, adminId)));
 
   if (!image) {
     throw new Error("Image not found or access denied");
@@ -212,7 +216,7 @@ export async function deleteImage(imageId: string) {
   }
 
   // 2. Delete from DB (cascade removes metadata, faces, etc.)
-  await db.delete(images).where(eq(images.id, imageId));
+  await db.delete(images).where(eq(images.id, validatedId));
 
   revalidatePath(`/dashboard/albums/${image.albumId}`);
 }
@@ -224,17 +228,19 @@ export async function getAlbumImages(
   limit: number = 24,
   offset: number = 0
 ) {
+  const validated = getAlbumImagesSchema.parse({ albumId, limit, offset });
+
   const session = await requireAdmin();
   const adminId = session.user.id;
 
   // Verify album ownership
-  await verifyAlbumOwnership(albumId, adminId);
+  await verifyAlbumOwnership(validated.albumId, adminId);
 
   return db
     .select()
     .from(images)
-    .where(eq(images.albumId, albumId))
-    .limit(limit)
-    .offset(offset)
+    .where(eq(images.albumId, validated.albumId))
+    .limit(validated.limit)
+    .offset(validated.offset)
     .orderBy(desc(images.createdAt));
 }

@@ -29,9 +29,12 @@ export async function generatePresignedUploadUrl(
   const { albumId, filename, contentType } = params;
 
   // Extract file extension from the original filename
-  const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
+  const parts = filename.split(".");
+  const ext = parts.length > 1 ? parts.pop()!.toLowerCase() : "jpg";
   const r2Key = `albums/${albumId}/${nanoid(16)}.${ext}`;
-  const baseUrl = R2_PUBLIC_URL.endsWith('/') ? R2_PUBLIC_URL.slice(0, -1) : R2_PUBLIC_URL;
+  const baseUrl = R2_PUBLIC_URL.endsWith("/")
+    ? R2_PUBLIC_URL.slice(0, -1)
+    : R2_PUBLIC_URL;
   const r2Url = `${baseUrl}/${r2Key}`;
 
   const command = new PutObjectCommand({

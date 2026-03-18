@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 import { deleteImage } from "@/actions/images";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,11 @@ export function ImageGallery({
         await deleteImage(imageId);
         setImageList((prev) => prev.filter((img) => img.id !== imageId));
         if (selectedImage?.id === imageId) setSelectedImage(null);
-      } catch {
-        setDeletingId(null);
+      } catch (error) {
+        console.error("Failed to delete image:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to delete image",
+        );
       } finally {
         setDeletingId(null);
       }
@@ -90,16 +94,25 @@ export function ImageGallery({
                 "group relative aspect-square rounded-lg overflow-hidden border border-border bg-muted/10 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.015] hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] hover:border-primary/50 cursor-pointer",
                 deletingId === image.id && "opacity-50 pointer-events-none",
               )}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open image ${image.filename}`}
               style={{
                 animation: "fade-up 0.5s ease-out forwards",
                 animationDelay: `${0.02 * index}s`,
                 opacity: 0,
               }}
               onClick={() => setSelectedImage(image)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelectedImage(image);
+                }
+              }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={image.r2Url.replace('.r2.dev//', '.r2.dev/')}
+                src={image.r2Url.replace(".r2.dev//", ".r2.dev/")}
                 alt={image.filename}
                 className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"

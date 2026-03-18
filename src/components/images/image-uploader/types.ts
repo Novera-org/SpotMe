@@ -28,4 +28,4 @@ export const ACCEPTED_TYPES = [
   "image/webp",
 ];
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-export const MAX_BATCH_SIZE = 500;
+export const MAX_BATCH_SIZE = 100;

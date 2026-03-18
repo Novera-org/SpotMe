@@ -37,7 +37,7 @@ export function ImageLightbox({
         <div className="relative flex items-center justify-center w-full h-full min-h-[50vh]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={image.r2Url.replace('.r2.dev//', '.r2.dev/')}
+            src={image.r2Url.replace(".r2.dev//", ".r2.dev/")}
             alt={image.filename}
             className="max-w-full max-h-[85vh] object-contain select-none"
           />
@@ -116,11 +116,20 @@ export function MoreImagesModal({
                   "group relative aspect-video rounded-xl overflow-hidden border border-border bg-muted/10 transition-all duration-300 ease-out hover:border-primary/50 cursor-pointer shadow-sm hover:-translate-y-1.5 hover:scale-[1.015] hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]",
                   deletingId === image.id && "opacity-50 pointer-events-none",
                 )}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open image ${image.filename}`}
                 onClick={() => onImageClick(image)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onImageClick(image);
+                  }
+                }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={image.r2Url.replace('.r2.dev//', '.r2.dev/')}
+                  src={image.r2Url.replace(".r2.dev//", ".r2.dev/")}
                   alt={image.filename}
                   className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
                   loading="lazy"
@@ -131,6 +140,7 @@ export function MoreImagesModal({
                   <Button
                     variant="destructive"
                     size="icon"
+                    aria-label={`Delete image ${image.filename}`}
                     className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all duration-200"
                     onClick={(e) => {
                       e.stopPropagation();
