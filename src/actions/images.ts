@@ -162,23 +162,20 @@ export async function confirmUpload(input: {
     );
   }
 
-  // 4. Atomic transaction for status update and metadata insertion
-  await db.transaction(async (tx) => {
-    // Update image status to "ready"
-    await tx
-      .update(images)
+  // 4. Atomic batch for status update and metadata insertion
+  // Note: neon-http doesn't support interactive transactions, but batch() is atomic
+  await db.batch([
+    db.update(images)
       .set({ status: "ready", updatedAt: new Date() })
-      .where(eq(images.id, parsed.data.imageId));
-
-    // Create image metadata row
-    await tx.insert(imageMetadata).values({
+      .where(eq(images.id, parsed.data.imageId)),
+    db.insert(imageMetadata).values({
       imageId: parsed.data.imageId,
       width: parsed.data.width,
       height: parsed.data.height,
       fileSize: parsed.data.fileSize,
       mimeType: parsed.data.mimeType,
-    });
-  });
+    })
+  ]);
 
   revalidatePath(`/dashboard/albums/${image.albumId}`);
 }
