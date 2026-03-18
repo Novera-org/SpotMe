@@ -1,4 +1,9 @@
-export type FileStatus = "pending" | "uploading" | "confirming" | "done" | "error";
+export type FileStatus =
+  | "pending"
+  | "uploading"
+  | "confirming"
+  | "done"
+  | "error";
 
 export interface TrackedFile {
   file: File;
@@ -16,6 +21,11 @@ export interface InsertedImage {
   status: string;
 }
 
-export const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-export const MAX_BATCH_SIZE = 1000;
+export const ACCEPTED_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
+export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+export const MAX_BATCH_SIZE = 500;

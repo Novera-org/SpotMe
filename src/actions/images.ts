@@ -203,12 +203,12 @@ export async function deleteImage(imageId: string) {
     throw new Error("Image not found or access denied");
   }
 
-  // 1. Delete from R2 - MUST succeed to proceed with DB cleanup
+  // 1. Delete from R2 - Try/catch so it doesn't block DB cleanup
   try {
     await deleteFromR2(image.r2Key);
   } catch (error) {
     console.error(`[deleteImage] Failed to delete from R2: ${image.r2Key}`, error);
-    throw new Error("Failed to delete the image from storage. The database record has been preserved.");
+    // Continue with database deletion even if R2 fails
   }
 
   // 2. Delete from DB (cascade removes metadata, faces, etc.)

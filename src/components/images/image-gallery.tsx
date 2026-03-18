@@ -42,28 +42,33 @@ export function ImageGallery({
     }
   }, [newImage]);
 
-  const handleDelete = useCallback(async (imageId: string, filename: string) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${filename}"? This action cannot be undone.`
-    );
-    if (!confirmed) return;
+  const handleDelete = useCallback(
+    async (imageId: string, filename: string) => {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${filename}"? This action cannot be undone.`,
+      );
+      if (!confirmed) return;
 
-    setDeletingId(imageId);
-    try {
-      await deleteImage(imageId);
-      setImageList((prev) => prev.filter((img) => img.id !== imageId));
-      if (selectedImage?.id === imageId) setSelectedImage(null);
-    } catch {
-      setDeletingId(null);
-    } finally {
-      setDeletingId(null);
-    }
-  }, [selectedImage]);
+      setDeletingId(imageId);
+      try {
+        await deleteImage(imageId);
+        setImageList((prev) => prev.filter((img) => img.id !== imageId));
+        if (selectedImage?.id === imageId) setSelectedImage(null);
+      } catch {
+        setDeletingId(null);
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [selectedImage],
+  );
 
   if (imageList.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-lg bg-card/50">
-        <p className="text-muted-foreground font-medium">No images uploaded yet</p>
+        <p className="text-muted-foreground font-medium">
+          No images uploaded yet
+        </p>
         <p className="text-sm text-muted-foreground/70 mt-1">
           Use the uploader above to add images to this album.
         </p>
@@ -83,7 +88,7 @@ export function ImageGallery({
               key={image.id}
               className={cn(
                 "group relative aspect-square rounded-lg overflow-hidden border border-border bg-muted/10 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.015] hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] hover:border-primary/50 cursor-pointer",
-                deletingId === image.id && "opacity-50 pointer-events-none"
+                deletingId === image.id && "opacity-50 pointer-events-none",
               )}
               style={{
                 animation: "fade-up 0.5s ease-out forwards",
@@ -94,7 +99,7 @@ export function ImageGallery({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={image.r2Url}
+                src={image.r2Url.replace('.r2.dev//', '.r2.dev/')}
                 alt={image.filename}
                 className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"

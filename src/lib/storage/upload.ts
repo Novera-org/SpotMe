@@ -1,4 +1,8 @@
-import { PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { nanoid } from "nanoid";
 import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from "./r2";
@@ -20,14 +24,15 @@ interface PresignedUploadResult {
  * Key pattern: albums/{albumId}/{nanoid(16)}.{ext}
  */
 export async function generatePresignedUploadUrl(
-  params: PresignedUploadParams
+  params: PresignedUploadParams,
 ): Promise<PresignedUploadResult> {
   const { albumId, filename, contentType } = params;
 
   // Extract file extension from the original filename
   const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
   const r2Key = `albums/${albumId}/${nanoid(16)}.${ext}`;
-  const r2Url = `${R2_PUBLIC_URL}/${r2Key}`;
+  const baseUrl = R2_PUBLIC_URL.endsWith('/') ? R2_PUBLIC_URL.slice(0, -1) : R2_PUBLIC_URL;
+  const r2Url = `${baseUrl}/${r2Key}`;
 
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET,

@@ -12,7 +12,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export const uploadImageSchema = z.object({
   albumId: z.string().uuid(),
   filename: z.string().min(1),
-  contentType: z.enum(ACCEPTED_IMAGE_TYPES as unknown as [string, ...string[]], {
+  contentType: z.enum(ACCEPTED_IMAGE_TYPES, {
     message: "Only JPEG, PNG, and WebP images are allowed",
   }),
   fileSize: z.number().max(MAX_FILE_SIZE, "File must be under 10MB"),
