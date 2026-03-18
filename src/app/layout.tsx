@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope } from "next/font/google";
 import { GuestMigrationHandler } from "@/components/shared/guest-migration-handler";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -32,6 +33,7 @@ export default function RootLayout({
       >
         <GuestMigrationHandler />
         {children}
+        <Toaster />
       </body>
     </html>
   );

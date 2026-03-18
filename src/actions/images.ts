@@ -32,7 +32,7 @@ interface UploadUrlResult {
 
 // ─── Request Upload URLs ─────────────────────────────────────────
 
-const MAX_BATCH_SIZE = 50;
+const MAX_BATCH_SIZE = 500;
 
 export async function requestUploadUrls(fileInfos: FileInfo[]) {
   const session = await requireAdmin();
@@ -168,13 +168,15 @@ export async function confirmUpload(input: {
     db.update(images)
       .set({ status: "ready", updatedAt: new Date() })
       .where(eq(images.id, parsed.data.imageId)),
-    db.insert(imageMetadata).values({
-      imageId: parsed.data.imageId,
-      width: parsed.data.width,
-      height: parsed.data.height,
-      fileSize: parsed.data.fileSize,
-      mimeType: parsed.data.mimeType,
-    })
+    db.insert(imageMetadata)
+      .values({
+        imageId: parsed.data.imageId,
+        width: parsed.data.width,
+        height: parsed.data.height,
+        fileSize: parsed.data.fileSize,
+        mimeType: parsed.data.mimeType,
+      })
+      .onConflictDoNothing()
   ]);
 
   revalidatePath(`/dashboard/albums/${image.albumId}`);

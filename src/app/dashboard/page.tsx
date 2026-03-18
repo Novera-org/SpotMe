@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAdminAlbums } from "@/actions/albums";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 
 export default async function DashboardPage() {
