@@ -12,7 +12,7 @@ import { generatePresignedUploadUrl, deleteFromR2, getObjectMetadata } from "@/l
 import { revalidatePath } from "next/cache";
 import { eq, and, desc } from "drizzle-orm";
 import { albums } from "@/lib/db/schema";
-
+import { MAX_BATCH_SIZE } from "@/components/images/image-uploader/types";
 // ─── Types ───────────────────────────────────────────────────────
 
 interface FileInfo {
@@ -32,7 +32,7 @@ interface UploadUrlResult {
 
 // ─── Request Upload URLs ─────────────────────────────────────────
 
-const MAX_BATCH_SIZE = 500;
+
 
 export async function requestUploadUrls(fileInfos: FileInfo[]) {
   const session = await requireAdmin();
