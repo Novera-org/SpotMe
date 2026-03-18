@@ -132,19 +132,22 @@ export async function confirmUpload(input: {
     throw new Error("Image not found or access denied");
   }
 
-  // Update image status to "ready"
-  await db
-    .update(images)
-    .set({ status: "ready", updatedAt: new Date() })
-    .where(eq(images.id, parsed.data.imageId));
+  // Atomic transaction for status update and metadata insertion
+  await db.transaction(async (tx) => {
+    // Update image status to "ready"
+    await tx
+      .update(images)
+      .set({ status: "ready", updatedAt: new Date() })
+      .where(eq(images.id, parsed.data.imageId));
 
-  // Create image metadata row
-  await db.insert(imageMetadata).values({
-    imageId: parsed.data.imageId,
-    width: parsed.data.width,
-    height: parsed.data.height,
-    fileSize: parsed.data.fileSize,
-    mimeType: parsed.data.mimeType,
+    // Create image metadata row
+    await tx.insert(imageMetadata).values({
+      imageId: parsed.data.imageId,
+      width: parsed.data.width,
+      height: parsed.data.height,
+      fileSize: parsed.data.fileSize,
+      mimeType: parsed.data.mimeType,
+    });
   });
 
   revalidatePath(`/dashboard/albums/${image.albumId}`);
