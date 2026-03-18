@@ -2,7 +2,6 @@
 
 import { UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MAX_BATCH_SIZE } from "./types";
 
 interface UploadDropzoneProps {
   isDragging: boolean;
@@ -33,7 +32,7 @@ export function UploadDropzone({
         isDragging
           ? "border-primary bg-primary/10"
           : "border-border bg-card/50 hover:bg-muted/10",
-        isProcessing && "pointer-events-none opacity-50"
+        isProcessing && "pointer-events-none opacity-50",
       )}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -43,7 +42,7 @@ export function UploadDropzone({
       <UploadCloud
         className={cn(
           "transition-colors",
-          isDragging ? "text-primary" : "text-muted-foreground/50"
+          isDragging ? "text-primary" : "text-muted-foreground/50",
         )}
         size={40}
       />

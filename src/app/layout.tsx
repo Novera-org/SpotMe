@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
-import { Fraunces, Manrope } from "next/font/google";
 import { GuestMigrationHandler } from "@/components/shared/guest-migration-handler";
 import { Toaster } from "@/components/ui/sonner";
+import type { Metadata } from "next";
+import { ThemeProvider } from "next-themes";
+import { Fraunces, Manrope } from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -27,13 +28,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${fraunces.variable} ${manrope.variable} font-sans antialiased bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground min-h-screen flex flex-col`}
       >
-        <GuestMigrationHandler />
-        {children}
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <GuestMigrationHandler />
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

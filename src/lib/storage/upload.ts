@@ -76,8 +76,8 @@ export async function getObjectMetadata(r2Key: string) {
       contentLength: response.ContentLength,
       contentType: response.ContentType,
     };
-  } catch (error: any) {
-    if (error.name === "NotFound") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "NotFound") {
       return null;
     }
     throw error;
