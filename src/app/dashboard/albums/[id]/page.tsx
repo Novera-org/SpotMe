@@ -1,7 +1,9 @@
 import { getAlbumById } from "@/actions/albums";
 import { getAlbumShareLinks } from "@/actions/share-links";
+import { getAlbumImages } from "@/actions/images";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
 import { ShareLinkManager } from "@/components/albums/share-link-manager";
+import { AlbumImageSection } from "@/components/images/album-image-section";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -36,6 +38,9 @@ export default async function AlbumDetailPage({
 
   const links =
     album.status === ALBUM_STATUS.ACTIVE ? await getAlbumShareLinks(id) : [];
+
+  // Fetch initial batch (first 24)
+  const albumImages = await getAlbumImages(id, 24, 0);
 
   const publicUrl = `${APP_URL}/album/${album.slug}`;
 
@@ -122,26 +127,23 @@ export default async function AlbumDetailPage({
           </Card>
         )}
 
-        {/* Images Placeholder */}
-        <Card className="border-border bg-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl font-serif">
-              <ImageIcon className="h-5 w-5 text-primary" />
-              Images
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-lg bg-card/50">
-              <ImageIcon className="h-10 w-10 text-muted-foreground/50 mb-3" />
-              <p className="text-muted-foreground font-medium">
-                Image upload will be available in the next update.
-              </p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Stay tuned for the new drag-and-drop gallery interface.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Images Section */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-2xl font-serif font-bold flex items-center gap-2">
+              <ImageIcon className="h-6 w-6 text-primary" />
+              Album Images
+              <span className="text-sm font-sans font-normal text-muted-foreground ml-2">
+                ({albumImages.length} images)
+              </span>
+            </h2>
+          </div>
+
+          <AlbumImageSection 
+            albumId={album.id} 
+            initialImages={albumImages} 
+          />
+        </div>
 
         {/* Settings Display */}
         {album.settings && (
