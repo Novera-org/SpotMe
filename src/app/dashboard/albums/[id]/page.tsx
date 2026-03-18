@@ -2,7 +2,7 @@ import { getAlbumById } from "@/actions/albums";
 import { getAlbumShareLinks } from "@/actions/share-links";
 import { getAlbumImages } from "@/actions/images";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
-import { ShareLinkManager } from "@/components/albums/share-link-manager";
+import { ShareLinkManager } from "@/components/albums/share-link-manager/index";
 import { AlbumImageSection } from "@/components/images/album-image-section";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
 import { notFound } from "next/navigation";
