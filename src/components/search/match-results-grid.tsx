@@ -156,9 +156,7 @@ export function MatchResultsGrid({
             {lightboxImage?.image.filename ?? "Image preview"}
           </DialogTitle>
 
-          <DialogClose
-            className="absolute right-4 top-4 z-50 rounded-full border border-white/20 bg-white/10 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
-          >
+          <DialogClose className="absolute right-4 top-4 z-50 rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95">
             <X className="size-5" />
             <span className="sr-only">Close</span>
           </DialogClose>
@@ -194,7 +192,7 @@ export function MatchResultsGrid({
                     lightboxImage.image.filename,
                   )
                 }
-                className="rounded-full border border-white/20 bg-white/10 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
+                className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95"
               >
                 <Download className="size-5" />
               </button>

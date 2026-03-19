@@ -49,10 +49,10 @@ export function FavoriteButton({
       disabled={isPending}
       aria-label={saved ? "Remove from saved" : "Save photo"}
       className={cn(
-        "rounded-full border border-white/20 bg-white/10 p-2 backdrop-blur-md transition-all active:scale-90",
+        "rounded-full border border-white/10 bg-black/50 p-2 text-white/90 backdrop-blur-md transition-all active:scale-90",
         saved
-          ? "bg-red-500/20 border-red-400/40 text-red-400 hover:bg-red-500/30"
-          : "text-white hover:bg-white/20",
+          ? "bg-red-500/20 border-red-400/40 text-red-400 hover:bg-black/70"
+          : "hover:bg-black/70",
         isPending && "opacity-60 pointer-events-none",
         className,
       )}
