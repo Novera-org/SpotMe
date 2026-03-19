@@ -11,6 +11,7 @@ import {
 } from "@/actions/matching";
 import { Camera, X, Search, AlertCircle, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/lib/auth/client";
 
 interface SelfieUploadFlowProps {
   albumId: string;
@@ -34,30 +35,72 @@ export function SelfieUploadFlow({
 }: SelfieUploadFlowProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<FlowStep>("upload");
   const [selfies, setSelfies] = useState<SelfieFile[]>([]);
   const [progressText, setProgressText] = useState("");
   const [progressValue, setProgressValue] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const { data: session } = useSession();
+
+  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+  const MAX_FILE_SIZE_MB = 10;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+  const isValidImageFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number])) {
+      return `"${file.name}" is not a supported format. Use JPEG, PNG, or WebP.`;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return `"${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB size limit.`;
+    }
+    if (file.size === 0) {
+      return `"${file.name}" appears to be empty.`;
+    }
+    return null;
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (requireLogin && !session) {
+      router.push(
+        `/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+      );
+      return;
+    }
+
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
     const newSelfies: SelfieFile[] = [];
     const remaining = maxSelfies - selfies.length;
+    const errors: string[] = [];
 
     for (let i = 0; i < Math.min(files.length, remaining); i++) {
+      const file = files[i];
+      const validationError = isValidImageFile(file);
+      if (validationError) {
+        errors.push(validationError);
+        continue;
+      }
       newSelfies.push({
-        file: files[i],
-        previewUrl: URL.createObjectURL(files[i]),
+        file,
+        previewUrl: URL.createObjectURL(file),
       });
     }
 
-    setSelfies((prev) => [...prev, ...newSelfies]);
+    if (errors.length > 0) {
+      setErrorMessage(errors.join(" "));
+    } else {
+      setErrorMessage("");
+    }
 
-    // Reset input so the same file can be re-selected
+    if (newSelfies.length > 0) {
+      setSelfies((prev) => [...prev, ...newSelfies]);
+    }
+
+    // Reset inputs so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
 
   const removeSelfie = (index: number) => {
@@ -70,6 +113,13 @@ export function SelfieUploadFlow({
   };
 
   const handleFindPhotos = async () => {
+    if (requireLogin && !session) {
+      router.push(
+        `/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+      );
+      return;
+    }
+
     if (selfies.length === 0) return;
 
     setStep("processing");
@@ -176,31 +226,70 @@ export function SelfieUploadFlow({
           </p>
         </div>
 
-        {/* File Input Area */}
-        <div
-          className={cn(
-            "relative flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border p-8 cursor-pointer",
-            "transition-colors duration-200 hover:border-primary/50 hover:bg-muted/5",
-          )}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="size-8 text-muted-foreground/60" />
-          <div className="text-center">
-            <p className="font-medium text-foreground">Add Photo(s)</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {selfies.length}/{maxSelfies} selfies selected
-            </p>
+        {/* Upload Options */}
+        <div className="flex flex-col gap-3">
+          {/* Take Photo Button (camera capture) */}
+          <div
+            className={cn(
+              "relative flex md:hidden items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border p-6 cursor-pointer",
+              "transition-colors duration-200 hover:border-primary/50 hover:bg-muted/5",
+              selfies.length >= maxSelfies && "pointer-events-none opacity-50",
+            )}
+            onClick={() => cameraInputRef.current?.click()}
+          >
+            <Camera className="size-6 text-muted-foreground/60" />
+            <div className="text-left">
+              <p className="font-medium text-foreground">Take Photo</p>
+              <p className="text-xs text-muted-foreground">
+                Open camera to take a selfie
+              </p>
+            </div>
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              className="sr-only"
+              onChange={handleFileSelect}
+              disabled={selfies.length >= maxSelfies}
+            />
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple={maxSelfies > 1}
-            className="sr-only"
-            onChange={handleFileSelect}
-            disabled={selfies.length >= maxSelfies}
-          />
+
+          {/* Upload Photo Button (gallery picker) */}
+          <div
+            className={cn(
+              "relative flex items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border p-6 cursor-pointer",
+              "transition-colors duration-200 hover:border-primary/50 hover:bg-muted/5",
+              selfies.length >= maxSelfies && "pointer-events-none opacity-50",
+            )}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="size-6 text-muted-foreground/60" />
+            <div className="text-left">
+              <p className="font-medium text-foreground">Upload Photo</p>
+              <p className="text-xs text-muted-foreground">
+                Choose from your gallery &middot; {selfies.length}/{maxSelfies}
+              </p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple={maxSelfies > 1}
+              className="sr-only"
+              onChange={handleFileSelect}
+              disabled={selfies.length >= maxSelfies}
+            />
+          </div>
         </div>
+
+        {/* Validation Errors */}
+        {errorMessage && step === "upload" && (
+          <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="size-4 mt-0.5 shrink-0" />
+            <p>{errorMessage}</p>
+          </div>
+        )}
 
         {/* Selfie Previews */}
         {selfies.length > 0 && (

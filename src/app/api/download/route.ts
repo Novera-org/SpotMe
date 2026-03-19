@@ -11,12 +11,31 @@ export async function GET(request: Request) {
   }
 
   // Security: Only allow downloads from our public R2 URL
-  const publicUrlBase = R2_PUBLIC_URL.endsWith("/")
-    ? R2_PUBLIC_URL.slice(0, -1)
-    : R2_PUBLIC_URL;
+  let downloadUrl: URL;
+  let allowedUrl: URL;
 
-  if (!url.startsWith(publicUrlBase)) {
+  try {
+    downloadUrl = new URL(url);
+    allowedUrl = new URL(R2_PUBLIC_URL);
+  } catch (error) {
+    return new NextResponse("Invalid URL format", { status: 400 });
+  }
+
+  if (downloadUrl.origin !== allowedUrl.origin) {
     return new NextResponse("Unauthorized download domain", { status: 403 });
+  }
+
+  // Ensure the requested pathname is within the allowed base path
+  const normalizedAllowedPath = allowedUrl.pathname.endsWith("/")
+    ? allowedUrl.pathname
+    : allowedUrl.pathname + "/";
+
+  const isAtOrUnderAllowedPath =
+    downloadUrl.pathname === allowedUrl.pathname ||
+    downloadUrl.pathname.startsWith(normalizedAllowedPath);
+
+  if (!isAtOrUnderAllowedPath) {
+    return new NextResponse("Unauthorized download path", { status: 403 });
   }
 
   try {

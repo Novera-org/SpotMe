@@ -35,6 +35,17 @@ export async function toggleFavorite(albumId: string, imageId: string) {
   }
 
   // Save
+  // Validate that the image belongs to the album
+  const [validImage] = await db
+    .select({ id: images.id })
+    .from(images)
+    .where(and(eq(images.id, imageId), eq(images.albumId, albumId)))
+    .limit(1);
+
+  if (!validImage) {
+    throw new Error("Image does not belong to this album");
+  }
+
   await db.insert(savedPhotos).values({
     albumId,
     imageId,
@@ -69,7 +80,13 @@ export async function getFavorites(albumId: string) {
       filename: images.filename,
     })
     .from(savedPhotos)
-    .innerJoin(images, eq(savedPhotos.imageId, images.id))
+    .innerJoin(
+      images,
+      and(
+        eq(savedPhotos.imageId, images.id),
+        eq(images.albumId, savedPhotos.albumId),
+      ),
+    )
     .where(whereClause);
 
   return saved;

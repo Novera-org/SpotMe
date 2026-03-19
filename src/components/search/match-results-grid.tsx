@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/search/favorite-button";
 import { Download, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface MatchItem {
   matchResult: {
@@ -66,6 +67,9 @@ export function MatchResultsGrid({
         // Small delay between downloads to avoid browser blocking
         await new Promise((r) => setTimeout(r, 300));
       }
+    } catch (error) {
+      console.error("Batch download failed:", error);
+      toast.error("An error occurred during the batch download.");
     } finally {
       setIsDownloadingAll(false);
     }
@@ -104,6 +108,15 @@ export function MatchResultsGrid({
               opacity: 0,
             }}
             onClick={() => setLightboxImage(match)}
+            tabIndex={0}
+            role="button"
+            aria-label={`View photo ${match.image.filename}`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setLightboxImage(match);
+              }
+            }}
           >
             <img
               src={match.image.r2Url}
@@ -112,7 +125,10 @@ export function MatchResultsGrid({
             />
 
             {/* Favorite Button — always visible top-right */}
-            <div className="absolute top-2 right-2 z-10">
+            <div
+              className="absolute top-2 right-2 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
               <FavoriteButton
                 albumId={albumId}
                 imageId={match.image.id}
@@ -130,9 +146,14 @@ export function MatchResultsGrid({
                 size="sm"
                 variant="secondary"
                 className="w-full"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  downloadImage(match.image.r2Url, match.image.filename);
+                  try {
+                    await downloadImage(match.image.r2Url, match.image.filename);
+                  } catch (error) {
+                    console.error("Download failed:", error);
+                    toast.error(`Failed to download ${match.image.filename}`);
+                  }
                 }}
               >
                 <Download data-icon="inline-start" />
@@ -186,13 +207,21 @@ export function MatchResultsGrid({
           {lightboxImage && (
             <div className="absolute bottom-4 right-4 z-50">
               <button
-                onClick={() =>
-                  downloadImage(
-                    lightboxImage.image.r2Url,
-                    lightboxImage.image.filename,
-                  )
-                }
+                onClick={async () => {
+                  try {
+                    await downloadImage(
+                      lightboxImage.image.r2Url,
+                      lightboxImage.image.filename,
+                    );
+                  } catch (error) {
+                    console.error("Download failed:", error);
+                    toast.error(
+                      `Failed to download ${lightboxImage.image.filename}`,
+                    );
+                  }
+                }}
                 className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95"
+                aria-label={`Download ${lightboxImage.image.filename}`}
               >
                 <Download className="size-5" />
               </button>

@@ -1,5 +1,7 @@
 "use server";
 
+import { z } from "zod";
+
 import { db } from "@/lib/db";
 import {
   searchSessions,
@@ -99,6 +101,22 @@ export async function requestSelfieUploadUrl(input: {
 // ─── Run Matching ────────────────────────────────────────────────
 
 export async function runMatching(searchSessionId: string) {
+  // 1. Validate UUID format
+  const uuidParse = z.string().uuid().safeParse(searchSessionId);
+  if (!uuidParse.success) {
+    return { error: "Invalid search session ID" };
+  }
+
+  // 2. Validate session exists and fetch selfies for matching
+  const session = await db.query.searchSessions.findFirst({
+    where: eq(searchSessions.id, searchSessionId),
+    with: { selfies: true },
+  });
+
+  if (!session) {
+    return { error: "Search session not found" };
+  }
+
   // Update status to matching
   await db
     .update(searchSessions)
@@ -106,13 +124,7 @@ export async function runMatching(searchSessionId: string) {
     .where(eq(searchSessions.id, searchSessionId));
 
   try {
-    // Get session with selfies
-    const session = await db.query.searchSessions.findFirst({
-      where: eq(searchSessions.id, searchSessionId),
-      with: { selfies: true },
-    });
-
-    if (!session || session.selfies.length === 0) {
+    if (session.selfies.length === 0) {
       await db
         .update(searchSessions)
         .set({ status: SEARCH_STATUS.FAILED })

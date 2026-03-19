@@ -12,6 +12,7 @@ import {
 import { FavoriteButton } from "@/components/search/favorite-button";
 import { Download, X, Heart, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface SavedPhoto {
   savedPhotoId: string;
@@ -98,6 +99,15 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
               opacity: 0,
             }}
             onClick={() => setLightboxPhoto(photo)}
+            tabIndex={0}
+            role="button"
+            aria-label={`View photo ${photo.filename}`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setLightboxPhoto(photo);
+              }
+            }}
           >
             <img
               src={photo.r2Url}
@@ -106,7 +116,10 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
             />
 
             {/* Favorite Button */}
-            <div className="absolute top-2 right-2 z-10">
+            <div
+              className="absolute top-2 right-2 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
               <FavoriteButton
                 albumId={albumId}
                 imageId={photo.imageId}
@@ -121,9 +134,14 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
                 size="sm"
                 variant="secondary"
                 className="w-full"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  downloadImage(photo.r2Url, photo.filename);
+                  try {
+                    await downloadImage(photo.r2Url, photo.filename);
+                  } catch (error) {
+                    console.error("Download failed:", error);
+                    toast.error(`Failed to download ${photo.filename}`);
+                  }
                 }}
               >
                 <Download data-icon="inline-start" />
@@ -176,10 +194,16 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
           {lightboxPhoto && (
             <div className="absolute bottom-4 right-4 z-50">
               <button
-                onClick={() =>
-                  downloadImage(lightboxPhoto.r2Url, lightboxPhoto.filename)
-                }
+                onClick={async () => {
+                  try {
+                    await downloadImage(lightboxPhoto.r2Url, lightboxPhoto.filename);
+                  } catch (error) {
+                    console.error("Download failed:", error);
+                    toast.error(`Failed to download ${lightboxPhoto.filename}`);
+                  }
+                }}
                 className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95"
+                aria-label={`Download ${lightboxPhoto.filename}`}
               >
                 <Download className="size-5" />
               </button>

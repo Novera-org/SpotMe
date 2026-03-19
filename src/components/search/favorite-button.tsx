@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { toggleFavorite } from "@/actions/favorites";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,11 @@ export function FavoriteButton({
 }: FavoriteButtonProps) {
   const [saved, setSaved] = useState(initialSaved);
   const [isPending, startTransition] = useTransition();
+
+  // Sync with prop changes from parent/siblings
+  useEffect(() => {
+    setSaved(initialSaved);
+  }, [initialSaved]);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();

@@ -6,6 +6,7 @@ import {
   real,
   jsonb,
   check,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { albums } from "./albums";
@@ -31,7 +32,7 @@ export const searchSessions = pgTable(
   (table) => [
     check(
       "user_or_guest",
-      sql`${table.userId} IS NOT NULL OR ${table.guestId} IS NOT NULL`,
+      sql`(${table.userId} IS NOT NULL AND ${table.guestId} IS NULL) OR (${table.userId} IS NULL AND ${table.guestId} IS NOT NULL)`,
     ),
   ],
 );
@@ -82,9 +83,15 @@ export const savedPhotos = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex("saved_photos_user_unique_idx")
+      .on(table.albumId, table.imageId, table.userId)
+      .where(sql`${table.userId} IS NOT NULL`),
+    uniqueIndex("saved_photos_guest_unique_idx")
+      .on(table.albumId, table.imageId, table.guestId)
+      .where(sql`${table.guestId} IS NOT NULL`),
     check(
       "saved_user_or_guest",
-      sql`${table.userId} IS NOT NULL OR ${table.guestId} IS NOT NULL`,
+      sql`(${table.userId} IS NOT NULL AND ${table.guestId} IS NULL) OR (${table.userId} IS NULL AND ${table.guestId} IS NOT NULL)`,
     ),
   ],
 );
