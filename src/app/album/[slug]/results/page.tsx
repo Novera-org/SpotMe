@@ -18,7 +18,7 @@ import { SEARCH_STATUS } from "@/config/constants";
 
 interface ResultsPageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ session?: string }>;
+  searchParams: Promise<{ session?: string | string[] }>;
 }
 
 export default async function ResultsPage({
@@ -26,7 +26,8 @@ export default async function ResultsPage({
   searchParams,
 }: ResultsPageProps) {
   const { slug } = await params;
-  const { session: sessionId } = await searchParams;
+  const { session: rawSession } = await searchParams;
+  const sessionId = Array.isArray(rawSession) ? rawSession[0] : rawSession;
 
   if (!sessionId) {
     redirect(`/album/${slug}`);
@@ -42,6 +43,10 @@ export default async function ResultsPage({
   }
 
   if (!album) {
+    redirect(`/album/${slug}`);
+  }
+
+  if (sessionData.albumId !== album.id) {
     redirect(`/album/${slug}`);
   }
 

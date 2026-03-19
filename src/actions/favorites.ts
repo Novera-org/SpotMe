@@ -22,38 +22,40 @@ export async function toggleFavorite(albumId: string, imageId: string) {
         eq(savedPhotos.guestId, identity.guestId!),
       );
 
-  // Check if already saved
-  const [existing] = await db
-    .select({ id: savedPhotos.id })
-    .from(savedPhotos)
-    .where(whereClause);
+  return await db.transaction(async (tx) => {
+    // Check if already saved
+    const [existing] = await tx
+      .select({ id: savedPhotos.id })
+      .from(savedPhotos)
+      .where(whereClause);
 
-  if (existing) {
-    // Unsave
-    await db.delete(savedPhotos).where(eq(savedPhotos.id, existing.id));
-    return { saved: false };
-  }
+    if (existing) {
+      // Unsave
+      await tx.delete(savedPhotos).where(eq(savedPhotos.id, existing.id));
+      return { saved: false };
+    }
 
-  // Save
-  // Validate that the image belongs to the album
-  const [validImage] = await db
-    .select({ id: images.id })
-    .from(images)
-    .where(and(eq(images.id, imageId), eq(images.albumId, albumId)))
-    .limit(1);
+    // Save
+    // Validate that the image belongs to the album
+    const [validImage] = await tx
+      .select({ id: images.id })
+      .from(images)
+      .where(and(eq(images.id, imageId), eq(images.albumId, albumId)))
+      .limit(1);
 
-  if (!validImage) {
-    throw new Error("Image does not belong to this album");
-  }
+    if (!validImage) {
+      throw new Error("Image does not belong to this album");
+    }
 
-  await db.insert(savedPhotos).values({
-    albumId,
-    imageId,
-    userId: identity.userId ?? null,
-    guestId: identity.guestId ?? null,
+    await tx.insert(savedPhotos).values({
+      albumId,
+      imageId,
+      userId: identity.userId ?? null,
+      guestId: identity.guestId ?? null,
+    });
+
+    return { saved: true };
   });
-
-  return { saved: true };
 }
 
 // ─── Get Favorites ───────────────────────────────────────────────
