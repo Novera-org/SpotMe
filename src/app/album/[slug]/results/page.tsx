@@ -12,7 +12,8 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 import { CheckCircle, SearchX, ArrowLeft } from "lucide-react";
 import { SEARCH_STATUS } from "@/config/constants";
