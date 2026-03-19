@@ -63,7 +63,10 @@ export function MatchResultsGrid({
     setIsDownloadingAll(true);
     try {
       for (const match of matches) {
-        await downloadImage(match.image.r2Url, match.image.filename);
+        await downloadImage(
+          match.image.r2Url.replace(".r2.dev//", ".r2.dev/"),
+          match.image.filename,
+        );
         // Small delay between downloads to avoid browser blocking
         await new Promise((r) => setTimeout(r, 300));
       }
@@ -119,7 +122,7 @@ export function MatchResultsGrid({
             }}
           >
             <img
-              src={match.image.r2Url}
+              src={match.image.r2Url.replace(".r2.dev//", ".r2.dev/")}
               alt={match.image.filename}
               className="size-full object-cover"
             />
@@ -149,7 +152,10 @@ export function MatchResultsGrid({
                 onClick={async (e) => {
                   e.stopPropagation();
                   try {
-                    await downloadImage(match.image.r2Url, match.image.filename);
+                    await downloadImage(
+                      match.image.r2Url.replace(".r2.dev//", ".r2.dev/"),
+                      match.image.filename,
+                    );
                   } catch (error) {
                     console.error("Download failed:", error);
                     toast.error(`Failed to download ${match.image.filename}`);
@@ -192,11 +198,11 @@ export function MatchResultsGrid({
               />
             </div>
           )}
-          
+
           {lightboxImage && (
             <div className="flex items-center justify-center p-1">
               <img
-                src={lightboxImage.image.r2Url}
+                src={lightboxImage.image.r2Url.replace(".r2.dev//", ".r2.dev/")}
                 alt={lightboxImage.image.filename}
                 className="max-h-[85vh] w-full rounded object-contain"
               />
@@ -210,7 +216,10 @@ export function MatchResultsGrid({
                 onClick={async () => {
                   try {
                     await downloadImage(
-                      lightboxImage.image.r2Url,
+                      lightboxImage.image.r2Url.replace(
+                        ".r2.dev//",
+                        ".r2.dev/",
+                      ),
                       lightboxImage.image.filename,
                     );
                   } catch (error) {

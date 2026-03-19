@@ -12,8 +12,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { CheckCircle, SearchX, ArrowLeft } from "lucide-react";
 import { SEARCH_STATUS } from "@/config/constants";
 
@@ -103,7 +102,7 @@ export default async function ResultsPage({
           <CardFooter className="flex justify-center border-t border-border pt-6">
             <Link
               href={`/album/${slug}`}
-              className={cn(buttonVariants({ variant: "outline" }))}
+              className={buttonVariants({ variant: "outline" })}
             >
               <ArrowLeft data-icon="inline-start" />
               Search Again
