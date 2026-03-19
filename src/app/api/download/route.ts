@@ -12,13 +12,21 @@ export async function GET(request: Request) {
 
   // Security: Only allow downloads from our public R2 URL
   let downloadUrl: URL;
-  let allowedUrl: URL;
-
   try {
     downloadUrl = new URL(url);
-    allowedUrl = new URL(R2_PUBLIC_URL);
   } catch (error) {
     return new NextResponse("Invalid URL format", { status: 400 });
+  }
+
+  let allowedUrl: URL;
+  try {
+    allowedUrl = new URL(R2_PUBLIC_URL);
+  } catch (error) {
+    console.error(
+      "[api/download] Server configuration error: Invalid R2_PUBLIC_URL",
+      error,
+    );
+    return new NextResponse("Server configuration error", { status: 500 });
   }
 
   if (downloadUrl.origin !== allowedUrl.origin) {
@@ -39,7 +47,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { redirect: "manual" });
+
+    if (response.status >= 300 && response.status < 400) {
+      return new NextResponse(
+        "Redirects are not allowed for security reasons",
+        { status: 403 },
+      );
+    }
 
     if (!response.ok) {
       return new NextResponse(`Failed to fetch image: ${response.statusText}`, {
@@ -49,7 +64,11 @@ export async function GET(request: Request) {
 
     const contentType =
       response.headers.get("Content-Type") || "application/octet-stream";
-    const blob = await response.blob();
+    const contentLength = response.headers.get("Content-Length");
+
+    if (!response.body) {
+      return new NextResponse("Failed to get response body", { status: 500 });
+    }
 
     // Sanitize filename to prevent header injection
     const sanitized = (filename || "image.jpg")
@@ -59,13 +78,17 @@ export async function GET(request: Request) {
 
     const encoded = encodeURIComponent(sanitized);
 
-    return new NextResponse(blob, {
-      headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${sanitized}"; filename*=UTF-8''${encoded}`,
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
-    });
+    const headers: Record<string, string> = {
+      "Content-Type": contentType,
+      "Content-Disposition": `attachment; filename="${sanitized}"; filename*=UTF-8''${encoded}`,
+      "Cache-Control": "public, max-age=31536000, immutable",
+    };
+
+    if (contentLength) {
+      headers["Content-Length"] = contentLength;
+    }
+
+    return new NextResponse(response.body, { headers });
   } catch (error) {
     console.error("[api/download] Proxy error:", error);
     return new NextResponse("Internal server error during download", {
