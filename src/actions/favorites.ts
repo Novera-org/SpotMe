@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { savedPhotos, images } from "@/lib/db/schema";
-import { requireIdentity } from "@/lib/auth/identity";
+import { requireIdentity, getCurrentIdentity } from "@/lib/auth/identity";
 import { eq, and } from "drizzle-orm";
 
 // ─── Toggle Favorite ─────────────────────────────────────────────
@@ -95,7 +95,11 @@ export async function getFavorites(albumId: string) {
 // ─── Get Saved Image IDs ────────────────────────────────────────
 
 export async function getSavedImageIds(albumId: string): Promise<string[]> {
-  const identity = await requireIdentity();
+  const identity = await getCurrentIdentity();
+
+  if (!identity) {
+    return [];
+  }
 
   const whereClause = identity.userId
     ? and(
