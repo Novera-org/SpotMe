@@ -64,3 +64,27 @@ export const matchResults = pgTable("match_results", {
   similarityScore: real("similarity_score").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const savedPhotos = pgTable(
+  "saved_photos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    albumId: uuid("album_id")
+      .notNull()
+      .references(() => albums.id, { onDelete: "cascade" }),
+    imageId: uuid("image_id")
+      .notNull()
+      .references(() => images.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
+    guestId: uuid("guest_id").references(() => guests.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "saved_user_or_guest",
+      sql`${table.userId} IS NOT NULL OR ${table.guestId} IS NOT NULL`,
+    ),
+  ],
+);

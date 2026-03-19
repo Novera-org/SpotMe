@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ImageUploader } from "./image-uploader/index";
+import { ImageUploader } from "./image-uploader";
 import { ImageGallery } from "./image-gallery";
 
 interface ImageItem {

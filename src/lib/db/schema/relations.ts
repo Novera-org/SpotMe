@@ -3,7 +3,7 @@ import { user, session, account } from "./auth";
 import { guests } from "./guests";
 import { albums, albumSettings, shareLinks } from "./albums";
 import { images, imageMetadata, faces, faceEmbeddings } from "./images";
-import { searchSessions, searchSelfies, matchResults } from "./search";
+import { searchSessions, searchSelfies, matchResults, savedPhotos } from "./search";
 import { downloads, activityLog } from "./analytics";
 
 // ─── Auth Relations ──────────────────────────────────────────────
@@ -14,6 +14,7 @@ export const userRelations = relations(user, ({ many }) => ({
   albums: many(albums),
   searchSessions: many(searchSessions),
   downloads: many(downloads),
+  savedPhotos: many(savedPhotos),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -29,6 +30,7 @@ export const accountRelations = relations(account, ({ one }) => ({
 export const guestRelations = relations(guests, ({ many }) => ({
   searchSessions: many(searchSessions),
   downloads: many(downloads),
+  savedPhotos: many(savedPhotos),
 }));
 
 // ─── Album Relations ─────────────────────────────────────────────
@@ -40,6 +42,7 @@ export const albumRelations = relations(albums, ({ one, many }) => ({
   images: many(images),
   searchSessions: many(searchSessions),
   activityLog: many(activityLog),
+  savedPhotos: many(savedPhotos),
 }));
 
 export const albumSettingsRelations = relations(albumSettings, ({ one }) => ({
@@ -64,6 +67,7 @@ export const imageRelations = relations(images, ({ one, many }) => ({
   faces: many(faces),
   matchResults: many(matchResults),
   downloads: many(downloads),
+  savedPhotos: many(savedPhotos),
 }));
 
 export const imageMetadataRelations = relations(imageMetadata, ({ one }) => ({
@@ -133,6 +137,22 @@ export const matchResultRelations = relations(matchResults, ({ one }) => ({
     references: [images.id],
   }),
   face: one(faces, { fields: [matchResults.faceId], references: [faces.id] }),
+}));
+
+export const savedPhotoRelations = relations(savedPhotos, ({ one }) => ({
+  album: one(albums, {
+    fields: [savedPhotos.albumId],
+    references: [albums.id],
+  }),
+  image: one(images, {
+    fields: [savedPhotos.imageId],
+    references: [images.id],
+  }),
+  user: one(user, { fields: [savedPhotos.userId], references: [user.id] }),
+  guest: one(guests, {
+    fields: [savedPhotos.guestId],
+    references: [guests.id],
+  }),
 }));
 
 // ─── Analytics Relations ─────────────────────────────────────────

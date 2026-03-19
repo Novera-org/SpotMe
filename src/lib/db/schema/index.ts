@@ -7,7 +7,7 @@ export { albums, albumSettings, shareLinks } from "./albums";
 // Images & Faces
 export { images, imageMetadata, faces, faceEmbeddings } from "./images";
 // Search & Matching
-export { searchSessions, searchSelfies, matchResults } from "./search";
+export { searchSessions, searchSelfies, matchResults, savedPhotos } from "./search";
 // Analytics
 export { downloads, activityLog } from "./analytics";
 // Relations
