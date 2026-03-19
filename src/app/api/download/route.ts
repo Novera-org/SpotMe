@@ -51,10 +51,18 @@ export async function GET(request: Request) {
       response.headers.get("Content-Type") || "application/octet-stream";
     const blob = await response.blob();
 
+    // Sanitize filename to prevent header injection
+    const sanitized = (filename || "image.jpg")
+      .replace(/[\r\n]/g, "") // Strip CR/LF
+      .replace(/"/g, "") // Strip quotes
+      .trim() || "image.jpg";
+
+    const encoded = encodeURIComponent(sanitized);
+
     return new NextResponse(blob, {
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `attachment; filename="${sanitized}"; filename*=UTF-8''${encoded}`,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
