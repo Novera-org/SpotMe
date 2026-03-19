@@ -46,8 +46,14 @@ export async function GET(request: Request) {
     return new NextResponse("Unauthorized download path", { status: 403 });
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
   try {
-    const response = await fetch(url, { redirect: "manual" });
+    const response = await fetch(downloadUrl.toString(), {
+      redirect: "manual",
+      signal: controller.signal,
+    });
 
     if (response.status >= 300 && response.status < 400) {
       return new NextResponse(
@@ -90,9 +96,14 @@ export async function GET(request: Request) {
 
     return new NextResponse(response.body, { headers });
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return new NextResponse("Downstream request timed out", { status: 504 });
+    }
     console.error("[api/download] Proxy error:", error);
     return new NextResponse("Internal server error during download", {
       status: 500,
     });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
