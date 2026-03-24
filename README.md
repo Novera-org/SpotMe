@@ -174,9 +174,9 @@ src/
 - [x] **Database schema** — 17 tables across 6 groups with Drizzle ORM
 - [x] **Authentication** — Email/password auth with Better Auth & role-based access
 - [x] **Guest system** — Anonymous users with session cookies & merge-on-signup
-- [ ] **Album management** — CRUD, settings, share links, QR code generation
-- [ ] **Image upload** — Bulk upload to Cloudflare R2 with presigned URLs & progress tracking
-- [ ] **Search & matching** — Selfie upload, AI face matching, results display
+- [x] **Album management** — CRUD, settings, share links, QR code generation
+- [x] **Image upload** — Bulk upload to Cloudflare R2 with presigned URLs & progress tracking
+- [x] **Search & matching** — Selfie upload, AI face matching, results display
 - [ ] **Analytics** — Download tracking, activity logging, admin dashboard stats
 - [ ] **Landing page** — Marketing page with dark theme & glassmorphism UI
 
