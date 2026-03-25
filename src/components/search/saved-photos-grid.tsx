@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,6 +10,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { FavoriteButton } from "@/components/search/favorite-button";
+import { Spinner } from "@/components/ui/spinner";
 import { Download, X, Heart, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -47,6 +48,24 @@ async function downloadImage(url: string, filename: string) {
 export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
   const [lightboxPhoto, setLightboxPhoto] = useState<SavedPhoto | null>(null);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+
+  const handleSingleDownload = useCallback(async (id: string, url: string, filename: string) => {
+    if (downloadingIds.has(id)) return;
+    setDownloadingIds((prev) => new Set(prev).add(id));
+    try {
+      await downloadImage(url, filename);
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error(`Failed to download ${filename}`);
+    } finally {
+      setDownloadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, [downloadingIds]);
 
   if (photos.length === 0) return null;
 
@@ -134,18 +153,18 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
                 size="sm"
                 variant="secondary"
                 className="w-full"
-                onClick={async (e) => {
+                disabled={downloadingIds.has(photo.savedPhotoId)}
+                onClick={(e) => {
                   e.stopPropagation();
-                  try {
-                    await downloadImage(photo.r2Url, photo.filename);
-                  } catch (error) {
-                    console.error("Download failed:", error);
-                    toast.error(`Failed to download ${photo.filename}`);
-                  }
+                  handleSingleDownload(photo.savedPhotoId, photo.r2Url, photo.filename);
                 }}
               >
-                <Download data-icon="inline-start" />
-                Download
+                {downloadingIds.has(photo.savedPhotoId) ? (
+                  <Spinner size="sm" className="border-current/25 border-t-current" />
+                ) : (
+                  <Download data-icon="inline-start" />
+                )}
+                {downloadingIds.has(photo.savedPhotoId) ? "Downloading…" : "Download"}
               </Button>
             </div>
           </div>
@@ -194,18 +213,16 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
           {lightboxPhoto && (
             <div className="absolute bottom-4 right-4 z-50">
               <button
-                onClick={async () => {
-                  try {
-                    await downloadImage(lightboxPhoto.r2Url, lightboxPhoto.filename);
-                  } catch (error) {
-                    console.error("Download failed:", error);
-                    toast.error(`Failed to download ${lightboxPhoto.filename}`);
-                  }
-                }}
-                className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95"
+                disabled={downloadingIds.has(lightboxPhoto.savedPhotoId)}
+                onClick={() => handleSingleDownload(lightboxPhoto.savedPhotoId, lightboxPhoto.r2Url, lightboxPhoto.filename)}
+                className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                 aria-label={`Download ${lightboxPhoto.filename}`}
               >
-                <Download className="size-5" />
+                {downloadingIds.has(lightboxPhoto.savedPhotoId) ? (
+                  <Spinner size="sm" className="border-white/25 border-t-white" />
+                ) : (
+                  <Download className="size-5" />
+                )}
               </button>
             </div>
           )}

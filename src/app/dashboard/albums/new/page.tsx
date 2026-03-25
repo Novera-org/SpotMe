@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { createAlbum } from "@/actions/albums";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,9 +67,9 @@ export default function NewAlbumPage() {
             marginTop: "0.5rem",
           }}
         >
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Creating..." : "Create Album"}
-          </Button>
+          <LoadingButton type="submit" isLoading={isPending} loadingText="Creating…">
+            Create Album
+          </LoadingButton>
           <Link href="/dashboard" className={buttonVariants({ variant: "outline" })}>
             Cancel
           </Link>

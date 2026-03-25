@@ -7,7 +7,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Share2, Plus } from "lucide-react";
 import { ShareLink } from "./types";
 import { useShareLinks } from "./use-share-links";
@@ -52,21 +52,16 @@ export function ShareLinkManager({
             Manage access codes for this album
           </CardDescription>
         </div>
-        <Button
+        <LoadingButton
           onClick={handleCreate}
-          disabled={isCreating}
+          isLoading={isCreating}
+          loadingText="Creating…"
           size="sm"
           className="gap-1.5"
         >
-          {isCreating ? (
-            "Creating..."
-          ) : (
-            <>
-              <Plus className="size-4" data-icon="inline-start" />
-              New link
-            </>
-          )}
-        </Button>
+          <Plus className="size-4" data-icon="inline-start" />
+          New link
+        </LoadingButton>
       </CardHeader>
       <CardContent className="pt-6">
         {links.length === 0 ? (
