@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/search/favorite-button";
+import { Spinner } from "@/components/ui/spinner";
 import { Download, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -58,6 +59,24 @@ export function MatchResultsGrid({
 }: MatchResultsGridProps) {
   const [lightboxImage, setLightboxImage] = useState<MatchItem | null>(null);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+
+  const handleSingleDownload = useCallback(async (id: string, url: string, filename: string) => {
+    if (downloadingIds.has(id)) return;
+    setDownloadingIds((prev) => new Set(prev).add(id));
+    try {
+      await downloadImage(url, filename);
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error(`Failed to download ${filename}`);
+    } finally {
+      setDownloadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, [downloadingIds]);
 
   const handleDownloadAll = async () => {
     setIsDownloadingAll(true);
@@ -149,21 +168,22 @@ export function MatchResultsGrid({
                 size="sm"
                 variant="secondary"
                 className="w-full"
-                onClick={async (e) => {
+                disabled={downloadingIds.has(match.matchResult.id)}
+                onClick={(e) => {
                   e.stopPropagation();
-                  try {
-                    await downloadImage(
-                      match.image.r2Url.replace(".r2.dev//", ".r2.dev/"),
-                      match.image.filename,
-                    );
-                  } catch (error) {
-                    console.error("Download failed:", error);
-                    toast.error(`Failed to download ${match.image.filename}`);
-                  }
+                  handleSingleDownload(
+                    match.matchResult.id,
+                    match.image.r2Url.replace(".r2.dev//", ".r2.dev/"),
+                    match.image.filename,
+                  );
                 }}
               >
-                <Download data-icon="inline-start" />
-                Download
+                {downloadingIds.has(match.matchResult.id) ? (
+                  <Spinner size="sm" className="border-current/25 border-t-current" />
+                ) : (
+                  <Download data-icon="inline-start" />
+                )}
+                {downloadingIds.has(match.matchResult.id) ? "Downloading…" : "Download"}
               </Button>
             </div>
           </div>
@@ -213,26 +233,20 @@ export function MatchResultsGrid({
           {lightboxImage && (
             <div className="absolute bottom-4 right-4 z-50">
               <button
-                onClick={async () => {
-                  try {
-                    await downloadImage(
-                      lightboxImage.image.r2Url.replace(
-                        ".r2.dev//",
-                        ".r2.dev/",
-                      ),
-                      lightboxImage.image.filename,
-                    );
-                  } catch (error) {
-                    console.error("Download failed:", error);
-                    toast.error(
-                      `Failed to download ${lightboxImage.image.filename}`,
-                    );
-                  }
-                }}
-                className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95"
+                disabled={downloadingIds.has(lightboxImage.matchResult.id)}
+                onClick={() => handleSingleDownload(
+                  lightboxImage.matchResult.id,
+                  lightboxImage.image.r2Url.replace(".r2.dev//", ".r2.dev/"),
+                  lightboxImage.image.filename,
+                )}
+                className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                 aria-label={`Download ${lightboxImage.image.filename}`}
               >
-                <Download className="size-5" />
+                {downloadingIds.has(lightboxImage.matchResult.id) ? (
+                  <Spinner size="sm" className="border-white/25 border-t-white" />
+                ) : (
+                  <Download className="size-5" />
+                )}
               </button>
             </div>
           )}

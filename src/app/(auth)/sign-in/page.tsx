@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signInAction, type AuthActionState } from "@/actions/auth";
 import PasswordInput from "@/components/shared/password-input";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -56,9 +56,9 @@ export default function SignInPage() {
           </div>
         )}
 
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "Signing in..." : "Sign In"}
-        </Button>
+        <LoadingButton type="submit" isLoading={isPending} loadingText="Signing in…" className="w-full">
+          Sign In
+        </LoadingButton>
       </form>
 
       <p className="auth-footer">

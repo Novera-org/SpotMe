@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { signUpAction, type AuthActionState } from "@/actions/auth";
 import PasswordInput from "@/components/shared/password-input";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -80,9 +80,9 @@ export default function SignUpPage() {
           </div>
         )}
 
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "Creating account..." : "Sign Up"}
-        </Button>
+        <LoadingButton type="submit" isLoading={isPending} loadingText="Creating account…" className="w-full">
+          Sign Up
+        </LoadingButton>
       </form>
 
       <p className="auth-footer">
