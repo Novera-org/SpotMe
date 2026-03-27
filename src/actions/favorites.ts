@@ -5,6 +5,24 @@ import { savedPhotos, images } from "@/lib/db/schema";
 import { requireIdentity, getCurrentIdentity } from "@/lib/auth/identity";
 import { eq, and } from "drizzle-orm";
 
+function isUniqueConstraintError(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23505"
+  ) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return message.includes("duplicate") || message.includes("unique");
+  }
+
+  return false;
+}
+
 // ─── Toggle Favorite ─────────────────────────────────────────────
 
 export async function toggleFavorite(albumId: string, imageId: string) {
@@ -44,12 +62,20 @@ export async function toggleFavorite(albumId: string, imageId: string) {
     throw new Error("Image does not belong to this album");
   }
 
-  await db.insert(savedPhotos).values({
-    albumId,
-    imageId,
-    userId: identity.userId ?? null,
-    guestId: identity.guestId ?? null,
-  });
+  try {
+    await db.insert(savedPhotos).values({
+      albumId,
+      imageId,
+      userId: identity.userId ?? null,
+      guestId: identity.guestId ?? null,
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return { saved: true };
+    }
+
+    throw error;
+  }
 
   return { saved: true };
 }
