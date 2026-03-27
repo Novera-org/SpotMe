@@ -213,7 +213,11 @@ export async function updateAlbumSettingsEntry(input: {
     throw new Error("Album description must be at most 500 characters.");
   }
 
-  if (description && description.replace(/\s/g, "").length === 0) {
+  if (
+    input.description !== undefined &&
+    input.description.trim().length === 0 &&
+    input.description.length > 0
+  ) {
     throw new Error("Album description cannot be only whitespace.");
   }
 
