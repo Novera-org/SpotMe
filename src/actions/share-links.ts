@@ -7,7 +7,8 @@ import { createShareLinkSchema } from "@/lib/validations/albums";
 import { verifyAlbumOwnership } from "./albums";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lt, isNotNull } from "drizzle-orm";
+import { processLogger } from "@/lib/logger";
 
 export async function createShareLink(input: unknown) {
   const session = await requireAdmin();
@@ -57,7 +58,30 @@ export async function deactivateShareLink(linkId: string) {
 
   await db
     .update(shareLinks)
-    .set({ isActive: false })
+    .set({ isActive: false, deactivatedAt: new Date() })
+    .where(eq(shareLinks.id, linkId));
+
+  revalidatePath(`/dashboard/albums/${result.albumId}`);
+}
+
+export async function reactivateShareLink(linkId: string) {
+  const session = await requireAdmin();
+  const adminId = session.user.id;
+
+  // Verify admin owns the album through a join
+  const [result] = await db
+    .select({ albumId: shareLinks.albumId })
+    .from(shareLinks)
+    .innerJoin(albums, eq(shareLinks.albumId, albums.id))
+    .where(and(eq(shareLinks.id, linkId), eq(albums.adminId, adminId)));
+
+  if (!result) {
+    throw new Error("Share link not found or access denied");
+  }
+
+  await db
+    .update(shareLinks)
+    .set({ isActive: true, deactivatedAt: null })
     .where(eq(shareLinks.id, linkId));
 
   revalidatePath(`/dashboard/albums/${result.albumId}`);
@@ -69,6 +93,23 @@ export async function getAlbumShareLinks(albumId: string) {
 
   // Verify ownership
   await verifyAlbumOwnership(albumId, adminId);
+
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  try {
+    await db
+      .delete(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.albumId, albumId),
+          eq(shareLinks.isActive, false),
+          isNotNull(shareLinks.deactivatedAt),
+          lt(shareLinks.deactivatedAt, cutoff),
+        ),
+      );
+  } catch (error) {
+    // Safeguard if migration hasn't been applied yet.
+    processLogger.error("[share-links] Cleanup failed", error);
+  }
 
   return db.query.shareLinks.findMany({
     where: eq(shareLinks.albumId, albumId),

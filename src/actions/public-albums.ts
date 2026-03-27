@@ -2,10 +2,11 @@
 
 import { db } from "@/lib/db";
 import { albums, images, shareLinks } from "@/lib/db/schema";
-import { eq, and, sql, or, gte, isNull } from "drizzle-orm";
+import { eq, and, sql, or, gte, isNull, lt, isNotNull } from "drizzle-orm";
 import { ALBUM_STATUS } from "@/config/constants";
 import { logActivity } from "@/lib/activity";
 import { getCurrentIdentity } from "@/lib/auth/identity";
+import { processLogger } from "@/lib/logger";
 
 export async function getPublicAlbum(slug: string) {
   const album = await db.query.albums.findFirst({
@@ -30,6 +31,22 @@ export async function getPublicAlbum(slug: string) {
 }
 
 export async function validateShareLink(code: string, albumId: string) {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  try {
+    await db
+      .delete(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.isActive, false),
+          isNotNull(shareLinks.deactivatedAt),
+          lt(shareLinks.deactivatedAt, cutoff),
+        ),
+      );
+  } catch (error) {
+    // Safeguard if migration hasn't been applied yet.
+    processLogger.error("[public-albums] Cleanup failed", error);
+  }
+
   const link = await db.query.shareLinks.findFirst({
     where: and(
       eq(shareLinks.code, code),
@@ -46,6 +63,22 @@ export async function trackShareLinkAccess(
   code: string,
   preloadedLink?: typeof shareLinks.$inferSelect,
 ) {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  try {
+    await db
+      .delete(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.isActive, false),
+          isNotNull(shareLinks.deactivatedAt),
+          lt(shareLinks.deactivatedAt, cutoff),
+        ),
+      );
+  } catch (error) {
+    // Safeguard if migration hasn't been applied yet.
+    processLogger.error("[public-albums] Cleanup failed", error);
+  }
+
   // Fetch the share link to get the albumId for activity logging
   const link =
     preloadedLink ||

@@ -18,6 +18,7 @@ interface AlbumStat {
   albumId: string;
   title: string;
   status: string;
+  visibility: "public" | "private";
   imageCount: number;
   searchCount: number;
   matchCount: number;
@@ -48,11 +49,23 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const adminId = session.user.id;
 
   // Fetch all admin albums
-  const adminAlbums = await db
-    .select({ id: albums.id, title: albums.title, status: albums.status, createdAt: albums.createdAt })
-    .from(albums)
-    .where(eq(albums.adminId, adminId))
-    .orderBy(desc(albums.createdAt));
+  const adminAlbums = await db.query.albums.findMany({
+    where: eq(albums.adminId, adminId),
+    columns: {
+      id: true,
+      title: true,
+      status: true,
+      createdAt: true,
+    },
+    with: {
+      settings: {
+        columns: {
+          requireLogin: true,
+        },
+      },
+    },
+    orderBy: [desc(albums.createdAt)],
+  });
 
   if (adminAlbums.length === 0) {
     return {
@@ -123,6 +136,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     albumId: album.id,
     title: album.title,
     status: album.status,
+    visibility: album.settings?.requireLogin ? "private" : "public",
     imageCount: imageMap.get(album.id) ?? 0,
     searchCount: searchMap.get(album.id) ?? 0,
     matchCount: matchMap.get(album.id) ?? 0,

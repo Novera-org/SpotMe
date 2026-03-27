@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Badge } from "@/components/ui/badge";
-import { Copy, QrCode, XCircle } from "lucide-react";
+import { Copy, QrCode, XCircle, RotateCcw } from "lucide-react";
 import { ShareLink } from "./types";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ interface ShareLinkItemProps {
   isCopied: boolean;
   onCopy: () => void;
   onDeactivate: () => void;
+  onReactivate: () => void;
 }
 
 export function ShareLinkItem({
@@ -19,6 +20,7 @@ export function ShareLinkItem({
   isCopied,
   onCopy,
   onDeactivate,
+  onReactivate,
 }: ShareLinkItemProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-muted/5 border border-border rounded-xl transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.3)] hover:border-primary/30">
@@ -69,7 +71,7 @@ export function ShareLinkItem({
           <QrCode className="size-3.5" data-icon="inline-start" />
           QR Code
         </a>
-        {link.isActive && (
+        {link.isActive ? (
           <Button
             variant="destructive"
             size="sm"
@@ -78,6 +80,16 @@ export function ShareLinkItem({
           >
             <XCircle className="size-3.5" data-icon="inline-start" />
             Deactivate
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onReactivate}
+            className="h-8 text-xs gap-1.5 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/15 hover:text-emerald-500"
+          >
+            <RotateCcw className="size-3.5" data-icon="inline-start" />
+            Reactivate
           </Button>
         )}
       </div>
