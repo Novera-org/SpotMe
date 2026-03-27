@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { createShareLink, deactivateShareLink } from "@/actions/share-links";
+import { createShareLink, deactivateShareLink, reactivateShareLink } from "@/actions/share-links";
 import { APP_URL } from "@/config/constants";
 import { toast } from "sonner";
 import { ShareLink } from "./types";
@@ -34,11 +34,27 @@ export function useShareLinks({ albumId, slug, initialLinks }: UseShareLinksProp
     try {
       await deactivateShareLink(linkId);
       setLinks((prev) =>
-        prev.map((l) => (l.id === linkId ? { ...l, isActive: false } : l))
+        prev.map((l) =>
+          l.id === linkId ? { ...l, isActive: false, deactivatedAt: new Date() } : l
+        )
       );
       toast.success("Share link deactivated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to deactivate share link");
+    }
+  }, []);
+
+  const handleReactivate = useCallback(async (linkId: string) => {
+    try {
+      await reactivateShareLink(linkId);
+      setLinks((prev) =>
+        prev.map((l) =>
+          l.id === linkId ? { ...l, isActive: true, deactivatedAt: null } : l
+        )
+      );
+      toast.success("Share link reactivated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reactivate share link");
     }
   }, []);
 
@@ -66,6 +82,7 @@ export function useShareLinks({ albumId, slug, initialLinks }: UseShareLinksProp
     copiedId,
     handleCreate,
     handleDeactivate,
+    handleReactivate,
     handleCopy,
   };
 }

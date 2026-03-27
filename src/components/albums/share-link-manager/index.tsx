@@ -30,6 +30,7 @@ export function ShareLinkManager({
     copiedId,
     handleCreate,
     handleDeactivate,
+    handleReactivate,
     handleCopy,
   } = useShareLinks({ albumId, slug, initialLinks });
 
@@ -79,6 +80,7 @@ export function ShareLinkManager({
                 isCopied={copiedId === link.id}
                 onCopy={() => handleCopy(link.code, link.id)}
                 onDeactivate={() => handleDeactivate(link.id)}
+                onReactivate={() => handleReactivate(link.id)}
               />
             ))}
           </div>

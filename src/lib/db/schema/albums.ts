@@ -48,5 +48,6 @@ export const shareLinks = pgTable("share_links", {
   isActive: boolean("is_active").notNull().default(true),
   accessCount: integer("access_count").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  deactivatedAt: timestamp("deactivated_at"),
   expiresAt: timestamp("expires_at"),
 });

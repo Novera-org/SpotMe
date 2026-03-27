@@ -5,6 +5,24 @@ import { savedPhotos, images } from "@/lib/db/schema";
 import { requireIdentity, getCurrentIdentity } from "@/lib/auth/identity";
 import { eq, and } from "drizzle-orm";
 
+function isUniqueConstraintError(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23505"
+  ) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return message.includes("duplicate") || message.includes("unique");
+  }
+
+  return false;
+}
+
 // ─── Toggle Favorite ─────────────────────────────────────────────
 
 export async function toggleFavorite(albumId: string, imageId: string) {
@@ -22,40 +40,44 @@ export async function toggleFavorite(albumId: string, imageId: string) {
         eq(savedPhotos.guestId, identity.guestId!),
       );
 
-  return await db.transaction(async (tx) => {
-    // Check if already saved
-    const [existing] = await tx
-      .select({ id: savedPhotos.id })
-      .from(savedPhotos)
-      .where(whereClause);
+  // Neon HTTP does not support transactions in this app, so keep the toggle
+  // flow request-safe with sequential queries instead.
+  const [existing] = await db
+    .select({ id: savedPhotos.id })
+    .from(savedPhotos)
+    .where(whereClause);
 
-    if (existing) {
-      // Unsave
-      await tx.delete(savedPhotos).where(eq(savedPhotos.id, existing.id));
-      return { saved: false };
-    }
+  if (existing) {
+    await db.delete(savedPhotos).where(eq(savedPhotos.id, existing.id));
+    return { saved: false };
+  }
 
-    // Save
-    // Validate that the image belongs to the album
-    const [validImage] = await tx
-      .select({ id: images.id })
-      .from(images)
-      .where(and(eq(images.id, imageId), eq(images.albumId, albumId)))
-      .limit(1);
+  const [validImage] = await db
+    .select({ id: images.id })
+    .from(images)
+    .where(and(eq(images.id, imageId), eq(images.albumId, albumId)))
+    .limit(1);
 
-    if (!validImage) {
-      throw new Error("Image does not belong to this album");
-    }
+  if (!validImage) {
+    throw new Error("Image does not belong to this album");
+  }
 
-    await tx.insert(savedPhotos).values({
+  try {
+    await db.insert(savedPhotos).values({
       albumId,
       imageId,
       userId: identity.userId ?? null,
       guestId: identity.guestId ?? null,
     });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return { saved: true };
+    }
 
-    return { saved: true };
-  });
+    throw error;
+  }
+
+  return { saved: true };
 }
 
 // ─── Get Favorites ───────────────────────────────────────────────

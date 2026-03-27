@@ -6,6 +6,7 @@ import { eq, and, sql, or, gte, isNull } from "drizzle-orm";
 import { ALBUM_STATUS } from "@/config/constants";
 import { logActivity } from "@/lib/activity";
 import { getCurrentIdentity } from "@/lib/auth/identity";
+import { purgeOldDeactivatedShareLinks } from "@/lib/db/cleanup";
 
 export async function getPublicAlbum(slug: string) {
   const album = await db.query.albums.findFirst({
@@ -30,6 +31,8 @@ export async function getPublicAlbum(slug: string) {
 }
 
 export async function validateShareLink(code: string, albumId: string) {
+  await purgeOldDeactivatedShareLinks(albumId);
+
   const link = await db.query.shareLinks.findFirst({
     where: and(
       eq(shareLinks.code, code),
@@ -46,6 +49,7 @@ export async function trackShareLinkAccess(
   code: string,
   preloadedLink?: typeof shareLinks.$inferSelect,
 ) {
+
   // Fetch the share link to get the albumId for activity logging
   const link =
     preloadedLink ||

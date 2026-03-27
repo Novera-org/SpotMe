@@ -6,5 +6,6 @@ export interface ShareLink {
   isActive: boolean;
   accessCount: number;
   createdAt: Date;
+  deactivatedAt: Date | null;
   expiresAt: Date | null;
 }

@@ -7,7 +7,8 @@ import { createShareLinkSchema } from "@/lib/validations/albums";
 import { verifyAlbumOwnership } from "./albums";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
+import { purgeOldDeactivatedShareLinks } from "@/lib/db/cleanup";
 
 export async function createShareLink(input: unknown) {
   const session = await requireAdmin();
@@ -44,6 +45,38 @@ export async function deactivateShareLink(linkId: string) {
   const session = await requireAdmin();
   const adminId = session.user.id;
 
+  const [updated] = await db
+    .update(shareLinks)
+    .set({
+      isActive: false,
+      deactivatedAt: sql`coalesce(${shareLinks.deactivatedAt}, ${new Date()})`,
+    })
+    .where(
+      and(
+        eq(shareLinks.id, linkId),
+        eq(shareLinks.isActive, true),
+        inArray(
+          shareLinks.albumId,
+          db
+            .select({ id: albums.id })
+            .from(albums)
+            .where(eq(albums.adminId, adminId)),
+        ),
+      ),
+    )
+    .returning({ albumId: shareLinks.albumId });
+
+  if (!updated) {
+    throw new Error("Share link not found, access denied, or already inactive");
+  }
+
+  revalidatePath(`/dashboard/albums/${updated.albumId}`);
+}
+
+export async function reactivateShareLink(linkId: string) {
+  const session = await requireAdmin();
+  const adminId = session.user.id;
+
   // Verify admin owns the album through a join
   const [result] = await db
     .select({ albumId: shareLinks.albumId })
@@ -57,7 +90,7 @@ export async function deactivateShareLink(linkId: string) {
 
   await db
     .update(shareLinks)
-    .set({ isActive: false })
+    .set({ isActive: true, deactivatedAt: null })
     .where(eq(shareLinks.id, linkId));
 
   revalidatePath(`/dashboard/albums/${result.albumId}`);
@@ -69,6 +102,9 @@ export async function getAlbumShareLinks(albumId: string) {
 
   // Verify ownership
   await verifyAlbumOwnership(albumId, adminId);
+ 
+  // Scoped purge of old deactivated links for this album
+  await purgeOldDeactivatedShareLinks(albumId);
 
   return db.query.shareLinks.findMany({
     where: eq(shareLinks.albumId, albumId),

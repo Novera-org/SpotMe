@@ -3,6 +3,7 @@ import { getAlbumShareLinks } from "@/actions/share-links";
 import { getAlbumImages } from "@/actions/images";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
 import { AlbumStatusActions } from "@/components/albums/album-status-actions";
+import { AlbumVisibilityBadge } from "@/components/albums/album-visibility-badge";
 import { ShareLinkManager } from "@/components/albums/share-link-manager/index";
 import { AlbumImageSection } from "@/components/images/album-image-section";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
@@ -45,6 +46,7 @@ export default async function AlbumDetailPage({
   const albumImages = await getAlbumImages(id, 24, 0);
 
   const publicUrl = `${APP_URL}/album/${album.slug}`;
+  const visibility = album.settings?.requireLogin ? "private" : "public";
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 flex flex-col gap-10">
@@ -68,6 +70,7 @@ export default async function AlbumDetailPage({
             </h1>
             <div className="flex items-center gap-4">
               <AlbumStatusBadge status={album.status} />
+              <AlbumVisibilityBadge visibility={visibility} />
               <AlbumStatusActions albumId={album.id} currentStatus={album.status} />
             </div>
           </div>
@@ -157,6 +160,10 @@ export default async function AlbumDetailPage({
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Visibility</span>
+                  <div className="font-medium text-foreground capitalize">{visibility}</div>
+                </div>
                 <div className="space-y-1">
                   <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Allow Downloads</span>
                   <div className="font-medium text-foreground">{album.settings.allowDownloads ? "Yes" : "No"}</div>
