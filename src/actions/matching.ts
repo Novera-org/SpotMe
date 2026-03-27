@@ -20,6 +20,7 @@ import {
   uploadSelfieSchema,
 } from "@/lib/validations/search";
 import { SEARCH_STATUS } from "@/config/constants";
+import { logActivity } from "@/lib/activity";
 
 // ─── Start Search Session ────────────────────────────────────────
 
@@ -52,6 +53,14 @@ export async function startSearchSession(albumId: string) {
       status: SEARCH_STATUS.UPLOADING,
     })
     .returning({ id: searchSessions.id });
+
+  // Log search activity
+  await logActivity({
+    albumId: parsed.data.albumId,
+    action: "search_started",
+    actorType: identity.type,
+    actorId: identity.userId || identity.guestId || undefined,
+  });
 
   return { sessionId: session.id, maxSelfies };
 }
@@ -189,6 +198,15 @@ export async function runMatching(searchSessionId: string) {
         completedAt: new Date(),
       })
       .where(eq(searchSessions.id, searchSessionId));
+
+    // Log match activity
+    await logActivity({
+      albumId: session.albumId,
+      action: "match_found",
+      actorType: "guest",
+      actorId: session.userId || session.guestId || undefined,
+      metadata: { matchCount: matchValues.length },
+    });
 
     return { matchCount: matchValues.length, sessionId: searchSessionId };
   } catch (error) {

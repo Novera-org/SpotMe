@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { albums, images, shareLinks } from "@/lib/db/schema";
 import { eq, and, sql, or, gte, isNull } from "drizzle-orm";
 import { ALBUM_STATUS } from "@/config/constants";
+import { logActivity } from "@/lib/activity";
+import { getCurrentIdentity } from "@/lib/auth/identity";
 
 export async function getPublicAlbum(slug: string) {
   const album = await db.query.albums.findFirst({
@@ -28,16 +30,30 @@ export async function getPublicAlbum(slug: string) {
 }
 
 export async function trackShareLinkAccess(code: string) {
+  // Fetch the share link to get the albumId for activity logging
+  const link = await db.query.shareLinks.findFirst({
+    where: and(
+      eq(shareLinks.code, code),
+      eq(shareLinks.isActive, true),
+      or(isNull(shareLinks.expiresAt), gte(shareLinks.expiresAt, new Date()))
+    ),
+  });
+
+  if (!link) return;
+
   await db
     .update(shareLinks)
     .set({
       accessCount: sql`${shareLinks.accessCount} + 1`,
     })
-    .where(
-      and(
-        eq(shareLinks.code, code),
-        eq(shareLinks.isActive, true),
-        or(isNull(shareLinks.expiresAt), gte(shareLinks.expiresAt, new Date()))
-      )
-    );
+    .where(eq(shareLinks.id, link.id));
+
+  // Log album viewed activity
+  const identity = await getCurrentIdentity();
+  await logActivity({
+    albumId: link.albumId,
+    action: "album_viewed",
+    actorType: identity?.type ?? "guest",
+    actorId: identity?.userId || identity?.guestId || undefined,
+  });
 }
