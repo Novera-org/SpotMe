@@ -22,40 +22,36 @@ export async function toggleFavorite(albumId: string, imageId: string) {
         eq(savedPhotos.guestId, identity.guestId!),
       );
 
-  return await db.transaction(async (tx) => {
-    // Check if already saved
-    const [existing] = await tx
-      .select({ id: savedPhotos.id })
-      .from(savedPhotos)
-      .where(whereClause);
+  // Neon HTTP does not support transactions in this app, so keep the toggle
+  // flow request-safe with sequential queries instead.
+  const [existing] = await db
+    .select({ id: savedPhotos.id })
+    .from(savedPhotos)
+    .where(whereClause);
 
-    if (existing) {
-      // Unsave
-      await tx.delete(savedPhotos).where(eq(savedPhotos.id, existing.id));
-      return { saved: false };
-    }
+  if (existing) {
+    await db.delete(savedPhotos).where(eq(savedPhotos.id, existing.id));
+    return { saved: false };
+  }
 
-    // Save
-    // Validate that the image belongs to the album
-    const [validImage] = await tx
-      .select({ id: images.id })
-      .from(images)
-      .where(and(eq(images.id, imageId), eq(images.albumId, albumId)))
-      .limit(1);
+  const [validImage] = await db
+    .select({ id: images.id })
+    .from(images)
+    .where(and(eq(images.id, imageId), eq(images.albumId, albumId)))
+    .limit(1);
 
-    if (!validImage) {
-      throw new Error("Image does not belong to this album");
-    }
+  if (!validImage) {
+    throw new Error("Image does not belong to this album");
+  }
 
-    await tx.insert(savedPhotos).values({
-      albumId,
-      imageId,
-      userId: identity.userId ?? null,
-      guestId: identity.guestId ?? null,
-    });
-
-    return { saved: true };
+  await db.insert(savedPhotos).values({
+    albumId,
+    imageId,
+    userId: identity.userId ?? null,
+    guestId: identity.guestId ?? null,
   });
+
+  return { saved: true };
 }
 
 // ─── Get Favorites ───────────────────────────────────────────────
