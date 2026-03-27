@@ -2,6 +2,7 @@ import { getAlbumById } from "@/actions/albums";
 import { getAlbumShareLinks } from "@/actions/share-links";
 import { getAlbumImages } from "@/actions/images";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
+import { AlbumStatusActions } from "@/components/albums/album-status-actions";
 import { ShareLinkManager } from "@/components/albums/share-link-manager/index";
 import { AlbumImageSection } from "@/components/images/album-image-section";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
@@ -65,7 +66,10 @@ export default async function AlbumDetailPage({
             <h1 className="text-3xl font-serif font-bold tracking-tight text-foreground text-balance">
               {album.title}
             </h1>
-            <AlbumStatusBadge status={album.status} />
+            <div className="flex items-center gap-4">
+              <AlbumStatusBadge status={album.status} />
+              <AlbumStatusActions albumId={album.id} currentStatus={album.status} />
+            </div>
           </div>
           {album.description && (
             <p className="text-muted-foreground text-lg mb-3 max-w-2xl">

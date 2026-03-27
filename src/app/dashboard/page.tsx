@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getDashboardStats } from "@/actions/stats";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
+import { AlbumStatusActions } from "@/components/albums/album-status-actions";
 import { StatCard, RecentActivityList } from "@/components/albums/album-stats";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
@@ -77,7 +78,10 @@ export default async function DashboardPage() {
                       <CardTitle className="text-lg font-semibold line-clamp-1 mr-2 flex-1">
                         {album.title}
                       </CardTitle>
-                      <AlbumStatusBadge status={album.status} />
+                      <div className="flex items-center gap-2">
+                        <AlbumStatusBadge status={album.status} />
+                        <AlbumStatusActions albumId={album.albumId} currentStatus={album.status} compact />
+                      </div>
                     </CardHeader>
                     <CardContent className="pb-4">
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
