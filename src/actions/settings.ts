@@ -215,19 +215,21 @@ export async function updateAlbumOrder(input: { albumIds: string[] }) {
     throw new Error("Invalid album ids provided.");
   }
 
-  // Use a transaction to update all album positions at once
-  await db.transaction(async (tx) => {
-    for (let i = 0; i < input.albumIds.length; i++) {
-      const albumId = input.albumIds[i];
-      await tx
-        .update(albums)
-        .set({
-          position: i,
-          updatedAt: new Date(),
-        })
-        .where(and(eq(albums.id, albumId), eq(albums.adminId, userId)));
-    }
-  });
+  // Neon HTTP does not support transactions. Use the batch API for performance.
+  const updateQueries = input.albumIds.map((albumId, i) =>
+    db
+      .update(albums)
+      .set({
+        position: i,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(albums.id, albumId), eq(albums.adminId, userId)))
+  );
+
+  if (updateQueries.length > 0) {
+    // @ts-ignore - Drizzle's HTTP driver batch types can be strict
+    await db.batch(updateQueries as any);
+  }
 
   revalidatePath("/settings/albums");
   revalidatePath("/dashboard");
