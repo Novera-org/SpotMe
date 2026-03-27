@@ -116,7 +116,13 @@ export function AlbumsSettingsPanel({ initialAlbums }: AlbumSettingsPanelProps) 
               <div className="flex items-center gap-3">
                 <div className="relative h-14 w-14 border border-border bg-muted/20 overflow-hidden">
                   {album.coverUrl ? (
-                    <Image src={album.coverUrl} alt={album.title} fill className="object-cover" />
+                    <Image
+                      src={album.coverUrl}
+                      alt={album.title}
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-muted-foreground">
                       <ImageIcon className="h-4 w-4" />

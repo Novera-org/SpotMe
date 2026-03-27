@@ -29,11 +29,11 @@ export default async function PublicAlbumPage({
 
   // Track share link access if ref code is present
   if (ref) {
-    const isValid = await validateShareLink(ref, album.id);
-    if (!isValid) {
+    const link = await validateShareLink(ref, album.id);
+    if (!link) {
       notFound();
     }
-    await trackShareLinkAccess(ref);
+    await trackShareLinkAccess(ref, link);
   }
 
   const maxSelfies = album.settings?.maxSelfies ?? 3;

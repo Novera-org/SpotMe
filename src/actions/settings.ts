@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { albums, albumSettings, images, session, user } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/helpers";
 import { processLogger } from "@/lib/logger";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 type SessionRecord = {
@@ -28,6 +28,10 @@ export async function getAccountSettingsData() {
     .from(user)
     .where(eq(user.id, userId));
 
+  if (!currentUser) {
+    throw new Error("User not found");
+  }
+
   const sessions = await db
     .select({
       id: session.id,
@@ -38,12 +42,9 @@ export async function getAccountSettingsData() {
     })
     .from(session)
     .where(eq(session.userId, userId))
-    .orderBy(asc(session.updatedAt));
+    .orderBy(desc(session.updatedAt));
 
-  const sessionRecords: SessionRecord[] = sessions
-    .slice()
-    .reverse()
-    .map((item) => ({
+  const sessionRecords: SessionRecord[] = sessions.map((item) => ({
       id: item.id,
       device: item.userAgent || "Unknown device",
       location: item.ipAddress || "Unknown location",
@@ -57,10 +58,6 @@ export async function getAccountSettingsData() {
       }).format(item.updatedAt),
       isCurrent: item.token === authSession.session.token,
     }));
-
-  if (!currentUser) {
-    throw new Error("User not found");
-  }
 
   return {
     user: currentUser,
@@ -195,32 +192,33 @@ export async function updateAlbumSettingsEntry(input: {
     throw new Error("Album not found.");
   }
 
-  const albumUpdate = await db
-    .update(albums)
-    .set({
-      title,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(albums.id, input.albumId), eq(albums.adminId, userId)));
-
-  if (!albumUpdate.rowCount) {
-    throw new Error("Failed to update album. It may not exist or you lack permission.");
-  }
-
-  const settingsUpsert = await db
-    .insert(albumSettings)
-    .values({
-      albumId: input.albumId,
-      requireLogin: input.visibility === "private",
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: albumSettings.albumId,
-      set: {
+  const [albumUpdate, settingsUpsert] = await db.batch([
+    db.update(albums)
+      .set({
+        title,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(albums.id, input.albumId), eq(albums.adminId, userId))),
+    db.insert(albumSettings)
+      .values({
+        albumId: input.albumId,
         requireLogin: input.visibility === "private",
         updatedAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: albumSettings.albumId,
+        set: {
+          requireLogin: input.visibility === "private",
+          updatedAt: new Date(),
+        },
+      }),
+  ]);
+
+  if (!albumUpdate.rowCount) {
+    throw new Error(
+      "Failed to update album. It may not exist or you lack permission.",
+    );
+  }
 
   if (!settingsUpsert.rowCount) {
     throw new Error("Failed to update album settings.");

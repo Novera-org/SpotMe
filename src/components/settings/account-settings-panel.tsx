@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateDisplayName, revokeSessionById } from "@/actions/settings";
 import { Button } from "@/components/ui/button";
@@ -33,13 +33,13 @@ export function AccountSettingsPanel({
   const [namePending, startNameTransition] = useTransition();
 
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordInfo, setPasswordInfo] = useState<string | null>(null);
   const [passwordPending, startPasswordTransition] = useTransition();
 
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [sessionPending, startSessionTransition] = useTransition();
 
-  const visibleSessions = useMemo(() => sessions, [sessions]);
 
   const handleDisplayNameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,11 +61,12 @@ export function AccountSettingsPanel({
   const handlePasswordPlaceholder = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPasswordError(null);
+    setPasswordInfo(null);
 
     startPasswordTransition(async () => {
       await new Promise((resolve) => setTimeout(resolve, 700));
       const message = "Password change is placeholder UI for now.";
-      setPasswordError(message);
+      setPasswordInfo(message);
       toast.info(message);
     });
   };
@@ -167,6 +168,12 @@ export function AccountSettingsPanel({
             </p>
           )}
 
+          {passwordInfo && (
+            <p className="text-sm text-muted-foreground" role="status">
+              {passwordInfo}
+            </p>
+          )}
+
           <LoadingButton
             type="submit"
             isLoading={passwordPending}
@@ -190,13 +197,13 @@ export function AccountSettingsPanel({
         )}
 
         <ul className="mt-5 space-y-3">
-          {visibleSessions.length === 0 && (
+          {sessions.length === 0 && (
             <li className="text-sm text-muted-foreground border border-dashed border-border p-4">
               No active sessions found.
             </li>
           )}
 
-          {visibleSessions.map((activeSession) => (
+          {sessions.map((activeSession) => (
             <li
               key={activeSession.id}
               className="border border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
