@@ -7,6 +7,7 @@ import { ALBUM_STATUS } from "@/config/constants";
 import { logActivity } from "@/lib/activity";
 import { getCurrentIdentity } from "@/lib/auth/identity";
 import { processLogger } from "@/lib/logger";
+import { purgeOldDeactivatedShareLinks } from "@/lib/db/cleanup";
 
 export async function getPublicAlbum(slug: string) {
   const album = await db.query.albums.findFirst({
@@ -31,21 +32,8 @@ export async function getPublicAlbum(slug: string) {
 }
 
 export async function validateShareLink(code: string, albumId: string) {
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  try {
-    await db
-      .delete(shareLinks)
-      .where(
-        and(
-          eq(shareLinks.isActive, false),
-          isNotNull(shareLinks.deactivatedAt),
-          lt(shareLinks.deactivatedAt, cutoff),
-        ),
-      );
-  } catch (error) {
-    // Safeguard if migration hasn't been applied yet.
-    processLogger.error("[public-albums] Cleanup failed", error);
-  }
+  // Purge old deactivated links (global check)
+  await purgeOldDeactivatedShareLinks();
 
   const link = await db.query.shareLinks.findFirst({
     where: and(
@@ -63,21 +51,6 @@ export async function trackShareLinkAccess(
   code: string,
   preloadedLink?: typeof shareLinks.$inferSelect,
 ) {
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  try {
-    await db
-      .delete(shareLinks)
-      .where(
-        and(
-          eq(shareLinks.isActive, false),
-          isNotNull(shareLinks.deactivatedAt),
-          lt(shareLinks.deactivatedAt, cutoff),
-        ),
-      );
-  } catch (error) {
-    // Safeguard if migration hasn't been applied yet.
-    processLogger.error("[public-albums] Cleanup failed", error);
-  }
 
   // Fetch the share link to get the albumId for activity logging
   const link =

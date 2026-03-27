@@ -31,3 +31,4 @@ export const MAX_SELFIES_DEFAULT = 3;
 export const MATCH_THRESHOLD_DEFAULT = 0.6;
 export const GUEST_SESSION_COOKIE = "guest_session";
 export const GUEST_SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days in seconds
+export const SHARE_LINK_RETENTION_DAYS = 30;

@@ -9,6 +9,7 @@ import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import { eq, and, lt, isNotNull } from "drizzle-orm";
 import { processLogger } from "@/lib/logger";
+import { purgeOldDeactivatedShareLinks } from "@/lib/db/cleanup";
 
 export async function createShareLink(input: unknown) {
   const session = await requireAdmin();
@@ -93,23 +94,9 @@ export async function getAlbumShareLinks(albumId: string) {
 
   // Verify ownership
   await verifyAlbumOwnership(albumId, adminId);
-
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  try {
-    await db
-      .delete(shareLinks)
-      .where(
-        and(
-          eq(shareLinks.albumId, albumId),
-          eq(shareLinks.isActive, false),
-          isNotNull(shareLinks.deactivatedAt),
-          lt(shareLinks.deactivatedAt, cutoff),
-        ),
-      );
-  } catch (error) {
-    // Safeguard if migration hasn't been applied yet.
-    processLogger.error("[share-links] Cleanup failed", error);
-  }
+ 
+  // Scoped purge of old deactivated links for this album
+  await purgeOldDeactivatedShareLinks(albumId);
 
   return db.query.shareLinks.findMany({
     where: eq(shareLinks.albumId, albumId),

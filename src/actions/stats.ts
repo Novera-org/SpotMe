@@ -136,7 +136,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     albumId: album.id,
     title: album.title,
     status: album.status,
-    visibility: album.settings?.requireLogin ? "private" : "public",
+    visibility: (album.settings?.requireLogin ?? true) ? "private" : "public",
     imageCount: imageMap.get(album.id) ?? 0,
     searchCount: searchMap.get(album.id) ?? 0,
     matchCount: matchMap.get(album.id) ?? 0,
