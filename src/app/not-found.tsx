@@ -5,13 +5,7 @@ import { buttonVariants } from "@/components/ui/button-variants";
 export default function NotFoundPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div
-        className="flex flex-col items-center gap-8 text-center max-w-md"
-        style={{
-          animation: "fade-up 0.5s ease-out forwards",
-          opacity: 0,
-        }}
-      >
+      <div className="flex flex-col items-center gap-8 text-center max-w-md animate-fade-up">
         {/* Large 404 number with gradient */}
         <div className="relative select-none">
           <span className="text-[10rem] sm:text-[12rem] font-serif font-bold leading-none tracking-tighter bg-linear-to-b from-muted-foreground/25 to-transparent bg-clip-text text-transparent">

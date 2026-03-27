@@ -128,11 +128,10 @@ export function MatchResultsGrid({
             className={cn(
               "group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted/5 cursor-pointer",
               "transition-all duration-300 ease-out hover:-translate-y-1.5 hover:scale-[1.015] hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] hover:border-primary/50",
+              "animate-fade-up"
             )}
             style={{
-              animation: "fade-up 0.5s ease-out forwards",
               animationDelay: `${index * 0.05}s`,
-              opacity: 0,
             }}
             onClick={() => setLightboxImage(match)}
             tabIndex={0}

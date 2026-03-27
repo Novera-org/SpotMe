@@ -10,5 +10,9 @@ export function formatDate(date: Date | string | number, options: Intl.DateTimeF
   month: 'short',
   day: 'numeric'
 }) {
-  return new Intl.DateTimeFormat('en-US', options).format(new Date(date))
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) {
+    return "";
+  }
+  return new Intl.DateTimeFormat('en-US', options).format(dateObj);
 }

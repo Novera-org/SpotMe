@@ -19,13 +19,7 @@ export default function DashboardError({ error, reset }: ErrorPageProps) {
   return (
     <div className="dashboard-page">
       <div className="flex items-center justify-center py-24">
-        <div
-          className="flex flex-col items-center gap-8 text-center max-w-sm"
-          style={{
-            animation: "fade-up 0.5s ease-out forwards",
-            opacity: 0,
-          }}
-        >
+        <div className="flex flex-col items-center gap-8 text-center max-w-sm animate-fade-up">
           {/* Glowing icon */}
           <div className="relative flex items-center justify-center">
             <div className="absolute size-24 rounded-full bg-destructive/5 blur-xl" />

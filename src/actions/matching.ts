@@ -199,14 +199,16 @@ export async function runMatching(searchSessionId: string) {
       })
       .where(eq(searchSessions.id, searchSessionId));
 
-    // Log match activity
-    await logActivity({
-      albumId: session.albumId,
-      action: "match_found",
-      actorType: session.userId ? "user" : "guest",
-      actorId: session.userId || session.guestId || undefined,
-      metadata: { matchCount: matchValues.length },
-    });
+    // Log match activity if matches were found
+    if (matchValues.length > 0) {
+      await logActivity({
+        albumId: session.albumId,
+        action: "match_found",
+        actorType: session.userId ? "user" : "guest",
+        actorId: session.userId || session.guestId || undefined,
+        metadata: { matchCount: matchValues.length },
+      });
+    }
 
     return { matchCount: matchValues.length, sessionId: searchSessionId };
   } catch (error) {

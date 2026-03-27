@@ -108,11 +108,9 @@ export function RecentActivityList({
         return (
           <li
             key={`${activity.action}-${index}`}
-            className="flex items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/10"
+            className="flex items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/10 animate-fade-up"
             style={{
-              animation: "fade-up 0.4s ease-out forwards",
               animationDelay: `${index * 0.03}s`,
-              opacity: 0,
             }}
           >
             <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/15">

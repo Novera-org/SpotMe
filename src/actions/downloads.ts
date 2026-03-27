@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { downloads, images, albums, albumSettings } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, or, ne, isNull } from "drizzle-orm";
 import { requireIdentity } from "@/lib/auth/identity";
 import { logActivity } from "@/lib/activity";
 
@@ -82,7 +82,10 @@ export async function trackBulkDownload(imageIds: string[]) {
     .where(
       and(
         inArray(images.id, arrayParse.data),
-        eq(albumSettings.allowDownloads, true)
+        or(
+          ne(albumSettings.allowDownloads, false),
+          isNull(albumSettings.allowDownloads)
+        )
       )
     );
 

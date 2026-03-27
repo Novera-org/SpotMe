@@ -67,11 +67,9 @@ export default async function DashboardPage() {
                 <Link
                   key={album.albumId}
                   href={`/dashboard/albums/${album.albumId}`}
-                  className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-all"
+                  className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-all animate-fade-up"
                   style={{
-                    animation: "fade-up 0.5s ease-out forwards",
                     animationDelay: `${index * 0.05}s`,
-                    opacity: 0,
                   }}
                 >
                   <Card className="transition-all duration-300 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.015] group-hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] group-hover:border-primary/50">
