@@ -6,11 +6,7 @@ export default function AlbumLoading() {
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-12 space-y-8">
         <Card
-          className="border-border bg-card overflow-hidden"
-          style={{
-            animation: "fade-up 0.5s ease-out forwards",
-            opacity: 0,
-          }}
+          className="border-border bg-card overflow-hidden animate-fade-up"
         >
           {/* Skeleton header matching album header structure */}
           <div className="bg-muted/10 border-b border-border p-6 flex flex-col items-center gap-3">

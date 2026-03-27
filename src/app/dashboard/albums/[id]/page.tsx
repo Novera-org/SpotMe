@@ -2,12 +2,14 @@ import { getAlbumById } from "@/actions/albums";
 import { getAlbumShareLinks } from "@/actions/share-links";
 import { getAlbumImages } from "@/actions/images";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
+import { AlbumStatusActions } from "@/components/albums/album-status-actions";
 import { ShareLinkManager } from "@/components/albums/share-link-manager/index";
 import { AlbumImageSection } from "@/components/images/album-image-section";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Image as ImageIcon, Settings2, Share2, Info } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 import {
   Card,
@@ -64,7 +66,10 @@ export default async function AlbumDetailPage({
             <h1 className="text-3xl font-serif font-bold tracking-tight text-foreground text-balance">
               {album.title}
             </h1>
-            <AlbumStatusBadge status={album.status} />
+            <div className="flex items-center gap-4">
+              <AlbumStatusBadge status={album.status} />
+              <AlbumStatusActions albumId={album.id} currentStatus={album.status} />
+            </div>
           </div>
           {album.description && (
             <p className="text-muted-foreground text-lg mb-3 max-w-2xl">
@@ -73,11 +78,7 @@ export default async function AlbumDetailPage({
           )}
           <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5" />
-            Created on {new Date(album.createdAt).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
+            Created on {formatDate(album.createdAt, { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
       </div>
@@ -180,7 +181,7 @@ export default async function AlbumDetailPage({
                   <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Link Expires</span>
                   <div className="font-medium text-foreground">
                     {album.settings.linkExpiresAt
-                      ? new Date(album.settings.linkExpiresAt).toLocaleDateString()
+                      ? formatDate(album.settings.linkExpiresAt)
                       : "Never"}
                   </div>
                 </div>

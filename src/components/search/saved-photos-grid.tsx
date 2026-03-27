@@ -14,6 +14,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Download, X, Heart, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { trackDownload, trackBulkDownload } from "@/actions/downloads";
 
 interface SavedPhoto {
   savedPhotoId: string;
@@ -50,11 +51,13 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
-  const handleSingleDownload = useCallback(async (id: string, url: string, filename: string) => {
+  const handleSingleDownload = useCallback(async (id: string, imageId: string, url: string, filename: string) => {
     if (downloadingIds.has(id)) return;
     setDownloadingIds((prev) => new Set(prev).add(id));
     try {
       await downloadImage(url, filename);
+      // Track the download (fire-and-forget)
+      trackDownload(imageId).catch(() => {});
     } catch (error) {
       console.error("Download failed:", error);
       toast.error(`Failed to download ${filename}`);
@@ -76,6 +79,8 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
         await downloadImage(photo.r2Url, photo.filename);
         await new Promise((r) => setTimeout(r, 300));
       }
+      // Track bulk download (fire-and-forget)
+      trackBulkDownload(photos.map((p) => p.imageId)).catch(() => {});
     } finally {
       setIsDownloadingAll(false);
     }
@@ -111,11 +116,10 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
             className={cn(
               "group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted/5 cursor-pointer",
               "transition-all duration-300 ease-out hover:-translate-y-1.5 hover:scale-[1.015] hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] hover:border-primary/50",
+              "animate-fade-up"
             )}
             style={{
-              animation: "fade-up 0.5s ease-out forwards",
               animationDelay: `${index * 0.05}s`,
-              opacity: 0,
             }}
             onClick={() => setLightboxPhoto(photo)}
             tabIndex={0}
@@ -156,7 +160,7 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
                 disabled={downloadingIds.has(photo.savedPhotoId)}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSingleDownload(photo.savedPhotoId, photo.r2Url, photo.filename);
+                  handleSingleDownload(photo.savedPhotoId, photo.imageId, photo.r2Url, photo.filename);
                 }}
               >
                 {downloadingIds.has(photo.savedPhotoId) ? (
@@ -214,7 +218,7 @@ export function SavedPhotosGrid({ photos, albumId }: SavedPhotosGridProps) {
             <div className="absolute bottom-4 right-4 z-50">
               <button
                 disabled={downloadingIds.has(lightboxPhoto.savedPhotoId)}
-                onClick={() => handleSingleDownload(lightboxPhoto.savedPhotoId, lightboxPhoto.r2Url, lightboxPhoto.filename)}
+                onClick={() => handleSingleDownload(lightboxPhoto.savedPhotoId, lightboxPhoto.imageId, lightboxPhoto.r2Url, lightboxPhoto.filename)}
                 className="rounded-full border border-white/10 bg-black/60 p-2 text-white shadow-xl backdrop-blur-md transition-all hover:bg-black/80 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                 aria-label={`Download ${lightboxPhoto.filename}`}
               >

@@ -17,11 +17,9 @@ export default function DashboardLoading() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card overflow-hidden"
+            className="rounded-xl border border-border bg-card overflow-hidden animate-fade-up"
             style={{
-              animation: "fade-up 0.5s ease-out forwards",
               animationDelay: `${i * 0.08}s`,
-              opacity: 0,
             }}
           >
             <div className="p-5 space-y-3">

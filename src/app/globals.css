@@ -113,6 +113,19 @@
   }
 }
 
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.5s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 /* Auth Layout */
 .auth-layout {
   display: flex;

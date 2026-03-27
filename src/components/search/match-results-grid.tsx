@@ -14,6 +14,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Download, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { trackDownload, trackBulkDownload } from "@/actions/downloads";
 
 interface MatchItem {
   matchResult: {
@@ -61,11 +62,13 @@ export function MatchResultsGrid({
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
-  const handleSingleDownload = useCallback(async (id: string, url: string, filename: string) => {
+  const handleSingleDownload = useCallback(async (id: string, imageId: string, url: string, filename: string) => {
     if (downloadingIds.has(id)) return;
     setDownloadingIds((prev) => new Set(prev).add(id));
     try {
       await downloadImage(url, filename);
+      // Track the download (fire-and-forget)
+      trackDownload(imageId).catch(() => {});
     } catch (error) {
       console.error("Download failed:", error);
       toast.error(`Failed to download ${filename}`);
@@ -89,6 +92,8 @@ export function MatchResultsGrid({
         // Small delay between downloads to avoid browser blocking
         await new Promise((r) => setTimeout(r, 300));
       }
+      // Track bulk download (fire-and-forget)
+      trackBulkDownload(matches.map((m) => m.image.id)).catch(() => {});
     } catch (error) {
       console.error("Batch download failed:", error);
       toast.error("An error occurred during the batch download.");
@@ -123,11 +128,10 @@ export function MatchResultsGrid({
             className={cn(
               "group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted/5 cursor-pointer",
               "transition-all duration-300 ease-out hover:-translate-y-1.5 hover:scale-[1.015] hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] hover:border-primary/50",
+              "animate-fade-up"
             )}
             style={{
-              animation: "fade-up 0.5s ease-out forwards",
               animationDelay: `${index * 0.05}s`,
-              opacity: 0,
             }}
             onClick={() => setLightboxImage(match)}
             tabIndex={0}
@@ -173,6 +177,7 @@ export function MatchResultsGrid({
                   e.stopPropagation();
                   handleSingleDownload(
                     match.matchResult.id,
+                    match.image.id,
                     match.image.r2Url.replace(".r2.dev//", ".r2.dev/"),
                     match.image.filename,
                   );
@@ -236,6 +241,7 @@ export function MatchResultsGrid({
                 disabled={downloadingIds.has(lightboxImage.matchResult.id)}
                 onClick={() => handleSingleDownload(
                   lightboxImage.matchResult.id,
+                  lightboxImage.image.id,
                   lightboxImage.image.r2Url.replace(".r2.dev//", ".r2.dev/"),
                   lightboxImage.image.filename,
                 )}
