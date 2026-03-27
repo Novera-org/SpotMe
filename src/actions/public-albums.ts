@@ -29,15 +29,33 @@ export async function getPublicAlbum(slug: string) {
   };
 }
 
-export async function trackShareLinkAccess(code: string) {
-  // Fetch the share link to get the albumId for activity logging
+export async function validateShareLink(code: string, albumId: string) {
   const link = await db.query.shareLinks.findFirst({
     where: and(
       eq(shareLinks.code, code),
+      eq(shareLinks.albumId, albumId),
       eq(shareLinks.isActive, true),
       or(isNull(shareLinks.expiresAt), gte(shareLinks.expiresAt, new Date()))
     ),
   });
+
+  return link || null;
+}
+
+export async function trackShareLinkAccess(
+  code: string,
+  preloadedLink?: typeof shareLinks.$inferSelect,
+) {
+  // Fetch the share link to get the albumId for activity logging
+  const link =
+    preloadedLink ||
+    (await db.query.shareLinks.findFirst({
+      where: and(
+        eq(shareLinks.code, code),
+        eq(shareLinks.isActive, true),
+        or(isNull(shareLinks.expiresAt), gte(shareLinks.expiresAt, new Date())),
+      ),
+    }));
 
   if (!link) return;
 

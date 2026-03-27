@@ -12,6 +12,7 @@ import {
 import { Camera, X, Search, AlertCircle, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/client";
+import { toast } from "sonner";
 
 interface SelfieUploadFlowProps {
   albumId: string;
@@ -62,6 +63,9 @@ export function SelfieUploadFlow({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (requireLogin && !session) {
+      toast.warning(
+        "This album is private. Please sign in first so we can verify access before you upload.",
+      );
       router.push(
         `/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
       );
@@ -114,6 +118,9 @@ export function SelfieUploadFlow({
 
   const handleFindPhotos = async () => {
     if (requireLogin && !session) {
+      toast.warning(
+        "This album is private. Please sign in first so we can verify access before searching.",
+      );
       router.push(
         `/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
       );
@@ -217,6 +224,15 @@ export function SelfieUploadFlow({
   if (step === "upload") {
     return (
       <div className="flex flex-col gap-6">
+        {requireLogin && !session && (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="size-4 mt-0.5 shrink-0 text-destructive" />
+            <p>
+              This album is private. Sign in to upload a selfie and search for
+              your photos.
+            </p>
+          </div>
+        )}
         <div className="text-center">
           <h2 className="text-lg font-serif text-balance">
             Upload a selfie to find your photos
