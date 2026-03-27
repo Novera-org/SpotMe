@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getPublicAlbum, trackShareLinkAccess } from "@/actions/public-albums";
+import { getPublicAlbum, trackShareLinkAccess, validateShareLink } from "@/actions/public-albums";
 import { getFavorites } from "@/actions/favorites";
 import { SelfieUploadFlow } from "@/components/search/selfie-upload-flow";
 import { SavedPhotosGrid } from "@/components/search/saved-photos-grid";
@@ -29,6 +29,10 @@ export default async function PublicAlbumPage({
 
   // Track share link access if ref code is present
   if (ref) {
+    const isValid = await validateShareLink(ref, album.id);
+    if (!isValid) {
+      notFound();
+    }
     await trackShareLinkAccess(ref);
   }
 

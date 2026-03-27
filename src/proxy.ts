@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const protectedRoutes = ["/dashboard"];
-const authRoutes = ["/sign-in", "/sign-up"];
+const protectedRoutes = ["/dashboard", "/settings"];
+const authRoutes = ["/sign-in", "/sign-up", "/login"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,7 +16,7 @@ export function proxy(request: NextRequest) {
   );
 
   if (isProtectedRoute && !sessionCookie) {
-    const signInUrl = new URL("/sign-in", request.url);
+    const signInUrl = new URL("/login", request.url);
     signInUrl.searchParams.set(
       "callbackUrl",
       pathname + request.nextUrl.search,
