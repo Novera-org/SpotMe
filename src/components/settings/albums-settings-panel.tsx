@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingButton } from "@/components/ui/loading-button";
+import { Textarea } from "@/components/ui/textarea";
 
 type AlbumSettingItem = {
   id: string;
   title: string;
+  description: string;
   trackCount: number;
   visibility: "public" | "private";
   coverUrl: string | null;
@@ -77,6 +79,7 @@ export function AlbumsSettingsPanel({ initialAlbums }: AlbumSettingsPanelProps) 
         await updateAlbumSettingsEntry({
           albumId: album.id,
           title: album.title,
+          description: album.description,
           visibility: album.visibility,
         });
         toast.success(`Saved "${album.title}".`);
@@ -88,10 +91,6 @@ export function AlbumsSettingsPanel({ initialAlbums }: AlbumSettingsPanelProps) 
         setPendingAlbumId(null);
       }
     });
-  };
-
-  const handleCoverPlaceholder = () => {
-    toast.info("Cover change UI is placeholder for now.");
   };
 
   return (
@@ -181,6 +180,24 @@ export function AlbumsSettingsPanel({ initialAlbums }: AlbumSettingsPanelProps) 
               </div>
 
               <div className="space-y-1.5">
+                <Label htmlFor={`description-${album.id}`}>Description</Label>
+                <Textarea
+                  id={`description-${album.id}`}
+                  value={album.description}
+                  onChange={(event) =>
+                    updateAlbumState(album.id, (current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Optional description for this album..."
+                  className="resize-y"
+                />
+              </div>
+
+              <div className="space-y-1.5">
                 <Label htmlFor={`visibility-${album.id}`}>Visibility</Label>
                 <select
                   id={`visibility-${album.id}`}
@@ -199,9 +216,6 @@ export function AlbumsSettingsPanel({ initialAlbums }: AlbumSettingsPanelProps) 
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" onClick={handleCoverPlaceholder}>
-                  Change cover
-                </Button>
                 <LoadingButton
                   type="submit"
                   isLoading={isPending && pendingAlbumId === album.id}
