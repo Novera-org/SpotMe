@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   const stats = await getDashboardStats();
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page flex flex-col gap-12">
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="dashboard-actions">
         <div>
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
       {stats.albumStats.length === 0 ? (
         /* ── Empty State ─────────────────────────────────── */
         <div className="empty-state">
-          <h3>No albums yet</h3>
+          <h3>No Albums Yet</h3>
           <p>Create your first album to start sharing photos.</p>
           <div style={{ marginTop: "1.5rem" }}>
             <Link href="/dashboard/albums/new" className={buttonVariants()}>
@@ -61,19 +61,19 @@ export default async function DashboardPage() {
         /* ── Main Content: Albums + Activity ──────────────── */
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left: album list (2/3 width) */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-6">
             <h3 className="text-lg font-serif text-balance">Your Albums</h3>
             <div className="space-y-3">
               {stats.albumStats.map((album, index) => (
                 <Link
                   key={album.albumId}
                   href={`/dashboard/albums/${album.albumId}`}
-                  className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-all animate-fade-up"
+                  className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-shadow animate-fade-up"
                   style={{
                     animationDelay: `${index * 0.05}s`,
                   }}
                 >
-                  <Card className="transition-all duration-300 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.015] group-hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] group-hover:border-primary/50">
+                  <Card className="transition-[transform,box-shadow,border-color] duration-300 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.015] group-hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] group-hover:border-primary/50">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-lg font-semibold line-clamp-1 mr-2 flex-1">
                         {album.title}
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Right: recent activity (1/3 width) */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             <h3 className="text-lg font-serif text-balance">Recent Activity</h3>
             <Card className="border-border bg-card overflow-hidden">
               <CardHeader className="bg-muted/10 border-b border-border pb-3">

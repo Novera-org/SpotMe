@@ -195,9 +195,12 @@
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  height: 4rem;
+  gap: 1rem;
+  min-height: 4rem;
+  padding: 0.5rem 0;
 }
 
 .dashboard-brand {
@@ -238,9 +241,10 @@
 /* Dashboard Actions */
 .dashboard-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
 }
 
 /* Empty State */

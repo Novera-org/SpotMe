@@ -14,5 +14,5 @@ export function formatDate(date: Date | string | number, options: Intl.DateTimeF
   if (isNaN(dateObj.getTime())) {
     return "";
   }
-  return new Intl.DateTimeFormat('en-US', options).format(dateObj);
+  return new Intl.DateTimeFormat(undefined, options).format(dateObj);
 }

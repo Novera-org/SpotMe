@@ -22,13 +22,15 @@ export default function NewAlbumPage() {
   );
 
   return (
-    <div className="dashboard-page">
-      <h2 className="dashboard-page-title">Create Album</h2>
-      <p className="dashboard-page-desc" style={{ marginBottom: "1.5rem" }}>
-        Add a new photo album to share with your audience.
-      </p>
+    <div className="dashboard-page flex flex-col gap-8">
+      <div>
+        <h2 className="dashboard-page-title">Create Album</h2>
+        <p className="dashboard-page-desc">
+          Add a new photo album to share with your audience.
+        </p>
+      </div>
 
-      <form action={formAction} className="auth-form" style={{ maxWidth: 500 }}>
+      <form action={formAction} className="auth-form w-full max-w-lg">
         {error && <div className="form-error">{error}</div>}
 
         <div className="space-y-1.5">
@@ -60,13 +62,7 @@ export default function NewAlbumPage() {
           />
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "0.75rem",
-            marginTop: "0.5rem",
-          }}
-        >
+        <div className="flex items-center gap-3 mt-4">
           <LoadingButton type="submit" isLoading={isPending} loadingText="Creating…">
             Create Album
           </LoadingButton>
