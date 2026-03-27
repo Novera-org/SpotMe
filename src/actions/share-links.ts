@@ -7,8 +7,7 @@ import { createShareLinkSchema } from "@/lib/validations/albums";
 import { verifyAlbumOwnership } from "./albums";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
-import { eq, and, lt, isNotNull } from "drizzle-orm";
-import { processLogger } from "@/lib/logger";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { purgeOldDeactivatedShareLinks } from "@/lib/db/cleanup";
 
 export async function createShareLink(input: unknown) {
@@ -46,23 +45,32 @@ export async function deactivateShareLink(linkId: string) {
   const session = await requireAdmin();
   const adminId = session.user.id;
 
-  // Verify admin owns the album through a join
-  const [result] = await db
-    .select({ albumId: shareLinks.albumId })
-    .from(shareLinks)
-    .innerJoin(albums, eq(shareLinks.albumId, albums.id))
-    .where(and(eq(shareLinks.id, linkId), eq(albums.adminId, adminId)));
+  const [updated] = await db
+    .update(shareLinks)
+    .set({
+      isActive: false,
+      deactivatedAt: sql`coalesce(${shareLinks.deactivatedAt}, ${new Date()})`,
+    })
+    .where(
+      and(
+        eq(shareLinks.id, linkId),
+        eq(shareLinks.isActive, true),
+        inArray(
+          shareLinks.albumId,
+          db
+            .select({ id: albums.id })
+            .from(albums)
+            .where(eq(albums.adminId, adminId)),
+        ),
+      ),
+    )
+    .returning({ albumId: shareLinks.albumId });
 
-  if (!result) {
-    throw new Error("Share link not found or access denied");
+  if (!updated) {
+    throw new Error("Share link not found, access denied, or already inactive");
   }
 
-  await db
-    .update(shareLinks)
-    .set({ isActive: false, deactivatedAt: new Date() })
-    .where(eq(shareLinks.id, linkId));
-
-  revalidatePath(`/dashboard/albums/${result.albumId}`);
+  revalidatePath(`/dashboard/albums/${updated.albumId}`);
 }
 
 export async function reactivateShareLink(linkId: string) {

@@ -2,11 +2,10 @@
 
 import { db } from "@/lib/db";
 import { albums, images, shareLinks } from "@/lib/db/schema";
-import { eq, and, sql, or, gte, isNull, lt, isNotNull } from "drizzle-orm";
+import { eq, and, sql, or, gte, isNull } from "drizzle-orm";
 import { ALBUM_STATUS } from "@/config/constants";
 import { logActivity } from "@/lib/activity";
 import { getCurrentIdentity } from "@/lib/auth/identity";
-import { processLogger } from "@/lib/logger";
 import { purgeOldDeactivatedShareLinks } from "@/lib/db/cleanup";
 
 export async function getPublicAlbum(slug: string) {
@@ -32,8 +31,7 @@ export async function getPublicAlbum(slug: string) {
 }
 
 export async function validateShareLink(code: string, albumId: string) {
-  // Purge old deactivated links (global check)
-  await purgeOldDeactivatedShareLinks();
+  await purgeOldDeactivatedShareLinks(albumId);
 
   const link = await db.query.shareLinks.findFirst({
     where: and(
