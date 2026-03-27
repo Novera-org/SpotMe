@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import { updateAlbumSettingsEntry } from "@/actions/settings";
+import { updateAlbumOrder, updateAlbumSettingsEntry } from "@/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,21 +35,36 @@ export function AlbumsSettingsPanel({ initialAlbums }: AlbumSettingsPanelProps) 
   };
 
   const moveAlbum = (albumId: string, direction: "up" | "down") => {
-    setAlbums((current) => {
-      const index = current.findIndex((album) => album.id === albumId);
-      if (index === -1) return current;
+    const currentIndex = albums.findIndex((album) => album.id === albumId);
+    if (currentIndex === -1) return;
 
-      const targetIndex = direction === "up" ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= current.length) return current;
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= albums.length) return;
 
-      const next = current.slice();
-      const temp = next[index];
-      next[index] = next[targetIndex];
-      next[targetIndex] = temp;
-      return next;
+    // 1. Calculate new order
+    const nextAlbums = [...albums];
+    const [movedAlbum] = nextAlbums.splice(currentIndex, 1);
+    nextAlbums.splice(targetIndex, 0, movedAlbum);
+
+    // 2. Optimistic Update
+    const previousAlbums = albums;
+    setAlbums(nextAlbums);
+
+    // 3. Persist Change
+    startTransition(async () => {
+      try {
+        const result = await updateAlbumOrder({
+          albumIds: nextAlbums.map((a) => a.id),
+        });
+
+        if (!result.ok) throw new Error("Failed to save order");
+        toast.success("Album order updated.");
+      } catch (error) {
+        // 4. Rollback on failure
+        setAlbums(previousAlbums);
+        toast.error("Failed to persist album order. Changes rolled back.");
+      }
     });
-
-    toast.success("Album order updated.");
   };
 
   const handleSaveAlbum = (event: React.FormEvent<HTMLFormElement>, album: AlbumSettingItem) => {

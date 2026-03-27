@@ -142,7 +142,7 @@ export async function getAlbumSettingsData() {
         orderBy: [asc(images.createdAt)],
       },
     },
-    orderBy: [asc(albums.createdAt)],
+    orderBy: [asc(albums.position), asc(albums.createdAt)],
   });
 
   return userAlbums.map((album) => ({
@@ -202,6 +202,34 @@ export async function updateAlbumSettingsEntry(input: {
 
   revalidatePath("/settings/albums");
   revalidatePath(`/dashboard/albums/${input.albumId}`);
+  revalidatePath("/dashboard");
+
+  return { ok: true };
+}
+
+export async function updateAlbumOrder(input: { albumIds: string[] }) {
+  const authSession = await requireAdmin();
+  const userId = authSession.user.id;
+
+  if (!input.albumIds || !Array.isArray(input.albumIds)) {
+    throw new Error("Invalid album ids provided.");
+  }
+
+  // Use a transaction to update all album positions at once
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < input.albumIds.length; i++) {
+      const albumId = input.albumIds[i];
+      await tx
+        .update(albums)
+        .set({
+          position: i,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(albums.id, albumId), eq(albums.adminId, userId)));
+    }
+  });
+
+  revalidatePath("/settings/albums");
   revalidatePath("/dashboard");
 
   return { ok: true };

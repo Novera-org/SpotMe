@@ -6,7 +6,7 @@ export default async function AccountSettingsPage() {
 
   return (
     <AccountSettingsPanel
-      initialName={data.user.name}
+      initialName={data.user.name ?? ""}
       email={data.user.email}
       sessions={data.sessions}
     />

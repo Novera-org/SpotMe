@@ -18,6 +18,7 @@ export const albums = pgTable("albums", {
   description: text("description"),
   slug: text("slug").notNull().unique(),
   status: text("status").notNull().default("draft"),
+  position: integer("position").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
