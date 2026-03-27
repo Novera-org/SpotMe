@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { albums, albumSettings, images, session, user } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/helpers";
 import { processLogger } from "@/lib/logger";
+import { getConfiguredR2ImageHostname } from "@/lib/storage/r2-public-host";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -14,6 +15,28 @@ type SessionRecord = {
   lastActiveLabel: string;
   isCurrent: boolean;
 };
+
+const CONFIGURED_IMAGE_HOSTNAME = getConfiguredR2ImageHostname();
+
+function getSafeAlbumCoverUrl(rawUrl: string | null | undefined) {
+  if (!rawUrl) {
+    return null;
+  }
+
+  const normalizedUrl = rawUrl.replace(".r2.dev//", ".r2.dev/");
+
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+
+    if (!CONFIGURED_IMAGE_HOSTNAME || parsedUrl.hostname !== CONFIGURED_IMAGE_HOSTNAME) {
+      return null;
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    return null;
+  }
+}
 
 export async function getAccountSettingsData() {
   const authSession = await requireAdmin();
@@ -45,19 +68,19 @@ export async function getAccountSettingsData() {
     .orderBy(desc(session.updatedAt));
 
   const sessionRecords: SessionRecord[] = sessions.map((item) => ({
-      id: item.id,
-      device: item.userAgent || "Unknown device",
-      location: item.ipAddress || "Unknown location",
-      lastActiveLabel: new Intl.DateTimeFormat("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "UTC",
-      }).format(item.updatedAt),
-      isCurrent: item.token === authSession.session.token,
-    }));
+    id: item.id,
+    device: item.userAgent || "Unknown device",
+    location: item.ipAddress || "Unknown location",
+    lastActiveLabel: new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }).format(item.updatedAt),
+    isCurrent: item.token === authSession.session.token,
+  }));
 
   return {
     user: currentUser,
@@ -145,8 +168,8 @@ export async function getAlbumSettingsData() {
 
   return userAlbums.map((album) => {
     if (!album.settings) {
-      processLogger.error(
-        `[getAlbumSettingsData] Album settings record is missing for album ID: ${album.id}. Defaulting visibility to private.`
+      processLogger.info(
+        `[getAlbumSettingsData] Album settings record is missing for album ID: ${album.id}. Defaulting visibility to private.`,
       );
     }
 
@@ -157,7 +180,7 @@ export async function getAlbumSettingsData() {
       title: album.title,
       trackCount: album.images.length,
       visibility: isPrivate ? ("private" as const) : ("public" as const),
-      coverUrl: album.images[0]?.r2Url || null,
+      coverUrl: getSafeAlbumCoverUrl(album.images[0]?.r2Url),
     };
   });
 }
@@ -193,13 +216,15 @@ export async function updateAlbumSettingsEntry(input: {
   }
 
   const [albumUpdate, settingsUpsert] = await db.batch([
-    db.update(albums)
+    db
+      .update(albums)
       .set({
         title,
         updatedAt: new Date(),
       })
       .where(and(eq(albums.id, input.albumId), eq(albums.adminId, userId))),
-    db.insert(albumSettings)
+    db
+      .insert(albumSettings)
       .values({
         albumId: input.albumId,
         requireLogin: input.visibility === "private",
@@ -247,7 +272,7 @@ export async function updateAlbumOrder(input: { albumIds: string[] }) {
         position: i,
         updatedAt: new Date(),
       })
-      .where(and(eq(albums.id, albumId), eq(albums.adminId, userId)))
+      .where(and(eq(albums.id, albumId), eq(albums.adminId, userId))),
   );
 
   if (updateQueries.length > 0) {

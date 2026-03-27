@@ -16,3 +16,20 @@ export function formatDate(date: Date | string | number, options: Intl.DateTimeF
   }
   return new Intl.DateTimeFormat(undefined, options).format(dateObj);
 }
+
+export function getUserDisplayLabel(
+  name: string | null | undefined,
+  email: string | null | undefined,
+) {
+  const trimmedName = name?.trim();
+  if (trimmedName) {
+    return trimmedName;
+  }
+
+  const trimmedEmail = email?.trim();
+  if (!trimmedEmail) {
+    return "Account";
+  }
+
+  return trimmedEmail.split("@")[0] || trimmedEmail;
+}

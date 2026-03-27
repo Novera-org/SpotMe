@@ -17,12 +17,12 @@ export default function DashboardLoading() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card overflow-hidden animate-fade-up"
+            className="overflow-hidden rounded-xl border border-border bg-card animate-fade-up"
             style={{
               animationDelay: `${i * 0.08}s`,
             }}
           >
-            <div className="p-5 space-y-3">
+            <div className="space-y-3 p-5">
               <div className="flex items-center justify-between">
                 <div className="h-5 w-36 rounded-md bg-muted/20 animate-pulse" />
                 <div className="h-5 w-14 rounded-full bg-muted/15 animate-pulse" />
@@ -38,10 +38,10 @@ export default function DashboardLoading() {
       </div>
 
       {/* Centered loader */}
-      <div className="flex items-center justify-center py-8 gap-3">
+      <div className="flex items-center justify-center gap-3 py-8">
         <Spinner size="md" />
-        <span className="text-sm text-muted-foreground/60 font-sans">
-          Loading your albums…
+        <span className="text-sm font-sans text-muted-foreground/60">
+          Loading your albums...
         </span>
       </div>
     </div>

@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+import {
+  getConfiguredR2ImageHostname,
+  logInvalidR2PublicUrl,
+} from "./src/lib/storage/r2-public-host";
 
 const r2PublicUrl = process.env.R2_PUBLIC_URL;
 
@@ -7,26 +11,22 @@ const r2PublicUrl = process.env.R2_PUBLIC_URL;
  * This is the primary source of truth for R2 image hosting.
  * Matches R2_PUBLIC_URL used in src/lib/storage/r2.ts and api/download/route.ts.
  */
-let r2Hostname = "pub-f83181e046814256adff3abdbac66cd1.r2.dev"; // Deliberate fallback for local dev
+const r2Hostname = getConfiguredR2ImageHostname(r2PublicUrl);
 
-if (r2PublicUrl) {
-  try {
-    r2Hostname = new URL(r2PublicUrl).hostname;
-  } catch (error) {
-    console.warn(
-      `[Config] Invalid R2_PUBLIC_URL: "${r2PublicUrl}". Using hardcoded fallback.`,
-    );
-  }
+if (r2PublicUrl && !r2Hostname) {
+  logInvalidR2PublicUrl(r2PublicUrl);
 }
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https" as const,
-        hostname: r2Hostname,
-      },
-    ],
+    remotePatterns: r2Hostname
+      ? [
+          {
+            protocol: "https" as const,
+            hostname: r2Hostname,
+          },
+        ]
+      : [],
   },
 };
 
