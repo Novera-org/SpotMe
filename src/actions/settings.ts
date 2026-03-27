@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { albums, albumSettings, images, session, user } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/auth/helpers";
+import { processLogger } from "@/lib/logger";
 import { and, asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -145,13 +146,23 @@ export async function getAlbumSettingsData() {
     orderBy: [asc(albums.position), asc(albums.createdAt)],
   });
 
-  return userAlbums.map((album) => ({
-    id: album.id,
-    title: album.title,
-    trackCount: album.images.length,
-    visibility: album.settings?.requireLogin ? ("private" as const) : ("public" as const),
-    coverUrl: album.images[0]?.r2Url || null,
-  }));
+  return userAlbums.map((album) => {
+    if (!album.settings) {
+      processLogger.error(
+        `[getAlbumSettingsData] Album settings record is missing for album ID: ${album.id}. Defaulting visibility to private.`
+      );
+    }
+
+    const isPrivate = album.settings?.requireLogin ?? true;
+
+    return {
+      id: album.id,
+      title: album.title,
+      trackCount: album.images.length,
+      visibility: isPrivate ? ("private" as const) : ("public" as const),
+      coverUrl: album.images[0]?.r2Url || null,
+    };
+  });
 }
 
 export async function updateAlbumSettingsEntry(input: {
@@ -184,21 +195,36 @@ export async function updateAlbumSettingsEntry(input: {
     throw new Error("Album not found.");
   }
 
-  await db
+  const albumUpdate = await db
     .update(albums)
     .set({
       title,
       updatedAt: new Date(),
     })
-    .where(eq(albums.id, input.albumId));
+    .where(and(eq(albums.id, input.albumId), eq(albums.adminId, userId)));
 
-  await db
-    .update(albumSettings)
-    .set({
+  if (!albumUpdate.rowCount) {
+    throw new Error("Failed to update album. It may not exist or you lack permission.");
+  }
+
+  const settingsUpsert = await db
+    .insert(albumSettings)
+    .values({
+      albumId: input.albumId,
       requireLogin: input.visibility === "private",
       updatedAt: new Date(),
     })
-    .where(eq(albumSettings.albumId, input.albumId));
+    .onConflictDoUpdate({
+      target: albumSettings.albumId,
+      set: {
+        requireLogin: input.visibility === "private",
+        updatedAt: new Date(),
+      },
+    });
+
+  if (!settingsUpsert.rowCount) {
+    throw new Error("Failed to update album settings.");
+  }
 
   revalidatePath("/settings/albums");
   revalidatePath(`/dashboard/albums/${input.albumId}`);
@@ -227,8 +253,8 @@ export async function updateAlbumOrder(input: { albumIds: string[] }) {
   );
 
   if (updateQueries.length > 0) {
-    // @ts-ignore - Drizzle's HTTP driver batch types can be strict
-    await db.batch(updateQueries as any);
+    // @ts-expect-error - Drizzle's HTTP driver batch types can be strict
+    await db.batch(updateQueries as Parameters<typeof db.batch>[0]);
   }
 
   revalidatePath("/settings/albums");
