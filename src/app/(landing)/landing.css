@@ -1,0 +1,193 @@
+/* ============================================================
+   SpotMe Landing Page — Swiss Brutalist / Monochrome Style
+   Scoped entirely under .landing-page to avoid polluting the app
+   ============================================================ */
+
+.landing-page {
+  --lp-font: var(--font-space-mono), "Space Mono", monospace;
+  --lp-black: #000000;
+  --lp-white: #ffffff;
+  --lp-gray-500: #666666;
+  --lp-gray-600: #4b5563;
+  --lp-gray-50: #f9fafb;
+
+  font-family: var(--lp-font);
+  color: var(--lp-black);
+  background-color: var(--lp-white);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Text Highlight ── */
+.landing-page .text-highlight {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+  white-space: nowrap;
+  background-color: var(--lp-black);
+  color: var(--lp-white);
+  padding: 0 0.2em;
+}
+
+/* ── Hero Visual ── */
+.landing-page .hero-visual {
+  position: relative;
+  height: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.landing-page .card-stack {
+  position: relative;
+  width: 340px;
+  height: 480px;
+}
+
+.landing-page .photo-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: var(--lp-white);
+  border-radius: 0;
+  border: 1px solid var(--lp-black);
+  overflow: hidden;
+  box-shadow: none;
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+.landing-page .photo-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.2) grayscale(20%);
+}
+
+.landing-page .card-icon {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: var(--lp-white);
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lp-black);
+}
+
+.landing-page .card-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--lp-black);
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.landing-page .photo-card:nth-child(1) {
+  transform: rotate(-4deg) translateX(-20px) translateY(10px);
+  z-index: 1;
+}
+.landing-page .photo-card:nth-child(2) {
+  transform: rotate(0deg) scale(1);
+  z-index: 2;
+  border: 2px solid var(--lp-black);
+}
+.landing-page .photo-card:nth-child(3) {
+  transform: rotate(4deg) translateX(20px) translateY(-10px);
+  z-index: 0;
+  opacity: 1;
+}
+
+.landing-page .card-stack:hover .photo-card:nth-child(1) {
+  transform: rotate(-6deg) translateX(-30px) translateY(20px);
+}
+.landing-page .card-stack:hover .photo-card:nth-child(3) {
+  transform: rotate(6deg) translateX(30px) translateY(-20px);
+}
+
+/* ── Scan Line Animation ── */
+.landing-page .scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--lp-black);
+  box-shadow: none;
+  animation: lp-scan 3s linear infinite;
+  z-index: 10;
+}
+
+@keyframes lp-scan {
+  0% { top: 10%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 90%; opacity: 0; }
+}
+
+/* ── Face Detection Box ── */
+.landing-page .face-box {
+  position: absolute;
+  top: 30%;
+  left: 40%;
+  width: 80px;
+  height: 80px;
+  border: 1px dashed var(--lp-black);
+  border-radius: 0;
+  z-index: 9;
+  animation: lp-pulse 1s steps(2, end) infinite;
+}
+
+@keyframes lp-pulse {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+/* ── Fade In Up — initial state for GSAP ── */
+.landing-page .fade-in-up {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+/* ── FAQ Accordion ── */
+.landing-page details > summary {
+  list-style: none;
+}
+.landing-page details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ── Scroll Margin for Anchor Links ── */
+.landing-page [id] {
+  scroll-margin-top: 72px;
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .landing-page .fade-in-up {
+    opacity: 1;
+    transform: none;
+  }
+  .landing-page .scan-line,
+  .landing-page .face-box {
+    animation: none;
+  }
+  .landing-page .photo-card {
+    transition: none;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 992px) {
+  .landing-page .hero-visual {
+    height: 400px;
+  }
+  .landing-page .card-stack {
+    width: 260px;
+    height: 360px;
+  }
+}

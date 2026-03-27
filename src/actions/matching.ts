@@ -159,10 +159,7 @@ export async function runMatching(searchSessionId: string) {
     }
 
     // Deduplicate: keep highest similarity per imageId
-    const bestMatches = new Map<
-      string,
-      (typeof allMatches)[number]
-    >();
+    const bestMatches = new Map<string, (typeof allMatches)[number]>();
     for (const match of allMatches) {
       const existing = bestMatches.get(match.imageId);
       if (!existing || match.similarityScore > existing.similarityScore) {
@@ -231,7 +228,9 @@ export async function getMatchResults(searchSessionId: string) {
 // ─── Get Search Session ──────────────────────────────────────────
 
 export async function getSearchSession(sessionId: string) {
-  return db.query.searchSessions.findFirst({
-    where: eq(searchSessions.id, sessionId),
-  }) ?? null;
+  return (
+    db.query.searchSessions.findFirst({
+      where: eq(searchSessions.id, sessionId),
+    }) ?? null
+  );
 }
