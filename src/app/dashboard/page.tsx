@@ -126,7 +126,7 @@ export default async function DashboardPage() {
                   Activity Feed
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-4 max-h-[500px] overflow-y-auto">
+              <CardContent className="pt-4 max-h-[320px] overflow-y-auto">
                 <RecentActivityList activities={stats.recentActivity} />
               </CardContent>
             </Card>

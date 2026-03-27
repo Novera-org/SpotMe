@@ -178,6 +178,7 @@ export async function getAlbumSettingsData() {
     return {
       id: album.id,
       title: album.title,
+      description: album.description ?? "",
       trackCount: album.images.length,
       visibility: isPrivate ? ("private" as const) : ("public" as const),
       coverUrl: getSafeAlbumCoverUrl(album.images[0]?.r2Url),
@@ -188,11 +189,13 @@ export async function getAlbumSettingsData() {
 export async function updateAlbumSettingsEntry(input: {
   albumId: string;
   title: string;
+  description: string;
   visibility: "public" | "private";
 }) {
   const authSession = await requireAdmin();
   const userId = authSession.user.id;
   const title = input.title?.trim();
+  const description = input.description?.trim() ?? "";
 
   if (!input.albumId) {
     throw new Error("Album id is required.");
@@ -204,6 +207,14 @@ export async function updateAlbumSettingsEntry(input: {
 
   if (title.length > 100) {
     throw new Error("Album title must be at most 100 characters.");
+  }
+
+  if (description.length > 500) {
+    throw new Error("Album description must be at most 500 characters.");
+  }
+
+  if (description && description.replace(/\s/g, "").length === 0) {
+    throw new Error("Album description cannot be only whitespace.");
   }
 
   const [ownedAlbum] = await db
@@ -220,6 +231,7 @@ export async function updateAlbumSettingsEntry(input: {
       .update(albums)
       .set({
         title,
+        description: description ? description : null,
         updatedAt: new Date(),
       })
       .where(and(eq(albums.id, input.albumId), eq(albums.adminId, userId))),
