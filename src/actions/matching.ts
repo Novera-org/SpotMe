@@ -203,7 +203,7 @@ export async function runMatching(searchSessionId: string) {
     await logActivity({
       albumId: session.albumId,
       action: "match_found",
-      actorType: "guest",
+      actorType: session.userId ? "user" : "guest",
       actorId: session.userId || session.guestId || undefined,
       metadata: { matchCount: matchValues.length },
     });

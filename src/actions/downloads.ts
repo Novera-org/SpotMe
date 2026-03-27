@@ -70,14 +70,24 @@ export async function trackBulkDownload(imageIds: string[]) {
 
   const identity = await requireIdentity();
 
-  // Verify all images exist and get their album IDs
+  // Verify all images exist and get their album IDs (only if downloads are allowed)
   const validImages = await db
-    .select({ id: images.id, albumId: images.albumId })
+    .select({
+      id: images.id,
+      albumId: images.albumId,
+    })
     .from(images)
-    .where(inArray(images.id, arrayParse.data));
+    .innerJoin(albums, eq(images.albumId, albums.id))
+    .leftJoin(albumSettings, eq(albums.id, albumSettings.albumId))
+    .where(
+      and(
+        inArray(images.id, arrayParse.data),
+        eq(albumSettings.allowDownloads, true)
+      )
+    );
 
   if (validImages.length === 0) {
-    return { error: "No valid images found" };
+    return { error: "No downloadable images found" };
   }
 
   // Insert download records for all valid images

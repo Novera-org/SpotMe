@@ -9,6 +9,7 @@ import {
   ScanFace,
 } from "lucide-react";
 import type { DashboardStats } from "@/actions/stats";
+import { formatDate } from "@/lib/utils";
 
 // ─── Stat Card ───────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ function getRelativeDate(date: Date): string {
   if (diffMin < 60) return `${diffMin}m ago`;
   if (diffHour < 24) return `${diffHour}h ago`;
   if (diffDay < 7) return `${diffDay}d ago`;
-  return new Date(date).toLocaleDateString();
+  return formatDate(date);
 }
 
 export function RecentActivityList({

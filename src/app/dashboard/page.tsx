@@ -17,6 +17,7 @@ import {
   Zap,
   Activity,
 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const stats = await getDashboardStats();
@@ -105,8 +106,7 @@ export default async function DashboardPage() {
                       </div>
                     </CardContent>
                     <CardFooter className="pt-0 mt-auto text-xs text-muted-foreground border-t p-4 pb-4">
-                      Created on{" "}
-                      {new Date(album.createdAt).toLocaleDateString()}
+                      Created on {formatDate(album.createdAt)}
                     </CardFooter>
                   </Card>
                 </Link>
