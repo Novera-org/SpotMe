@@ -39,7 +39,7 @@ export function AlbumStatusActions({ albumId, currentStatus, compact = false }: 
           onClick={(e) => handleStatusUpdate(e, ALBUM_STATUS.ACTIVE)}
           disabled={isPending}
           className={cn(
-            "gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95",
+            "gap-2 shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95",
             compact && "h-8 px-3 text-xs"
           )}
         >
@@ -60,7 +60,7 @@ export function AlbumStatusActions({ albumId, currentStatus, compact = false }: 
           onClick={(e) => handleStatusUpdate(e, ALBUM_STATUS.ARCHIVED)}
           disabled={isPending}
           className={cn(
-            "gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all",
+            "gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors",
             compact && "h-8 px-3 text-xs"
           )}
         >
@@ -80,7 +80,7 @@ export function AlbumStatusActions({ albumId, currentStatus, compact = false }: 
           onClick={(e) => handleStatusUpdate(e, ALBUM_STATUS.DRAFT)}
           disabled={isPending}
           className={cn(
-            "gap-2 transition-all",
+            "gap-2 transition-colors",
             compact && "h-8 px-3 text-xs"
           )}
         >
@@ -100,7 +100,7 @@ export function AlbumStatusActions({ albumId, currentStatus, compact = false }: 
           size="sm"
           onClick={(e) => handleStatusUpdate(e, ALBUM_STATUS.DRAFT)}
           disabled={isPending}
-          className="text-muted-foreground hover:text-foreground transition-all"
+          className="text-muted-foreground hover:text-foreground transition-colors"
         >
           {isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -2,7 +2,7 @@ import { Spinner } from "@/components/ui/spinner";
 
 export default function DashboardLoading() {
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page flex flex-col gap-12">
       {/* Skeleton header row */}
       <div className="dashboard-actions">
         <div className="space-y-2">
@@ -40,7 +40,9 @@ export default function DashboardLoading() {
       {/* Centered loader */}
       <div className="flex items-center justify-center py-8 gap-3">
         <Spinner size="md" />
-        <span className="text-sm text-muted-foreground/60 font-sans">Loading your albums…</span>
+        <span className="text-sm text-muted-foreground/60 font-sans">
+          Loading your albums…
+        </span>
       </div>
     </div>
   );

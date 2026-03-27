@@ -21,7 +21,7 @@ export function ShareLinkItem({
   onDeactivate,
 }: ShareLinkItemProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-muted/5 border border-border rounded-xl transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.3)] hover:border-primary/30">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-muted/5 border border-border rounded-xl transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.3)] hover:border-primary/30">
       <div className="flex flex-col gap-1.5 min-w-0">
         <div className="flex items-center gap-2">
           <code className="px-2 py-0.5 rounded bg-muted/20 text-primary font-mono text-sm font-bold">
