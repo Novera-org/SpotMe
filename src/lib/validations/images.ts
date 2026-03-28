@@ -34,9 +34,10 @@ export type UploadImageInput = z.infer<typeof uploadImageSchema>;
 export type ImageMetadataInput = z.infer<typeof imageMetadataSchema>;
 
 export const imageIdSchema = z.uuid({ message: "Invalid image ID" });
+export const albumIdSchema = z.uuid({ message: "Invalid album ID" });
 
 export const getAlbumImagesSchema = z.object({
-  albumId: z.uuid({ message: "Invalid album ID" }),
+  albumId: albumIdSchema,
   limit: z.number().int().min(1).max(100).default(24),
   offset: z.number().int().min(0).default(0),
 });

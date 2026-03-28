@@ -35,7 +35,7 @@ export function DashboardAlbumCard({
   const router = useRouter();
 
   const openAlbum = () => {
-    router.push(`/dashboard/albums/${album.albumId}`);
+    router.push(`/dashboard/albums/${encodeURIComponent(album.albumId)}`);
   };
 
   return (
@@ -49,6 +49,7 @@ export function DashboardAlbumCard({
       }}
       onClick={openAlbum}
       onKeyDown={(event) => {
+        if (event.repeat) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           openAlbum();

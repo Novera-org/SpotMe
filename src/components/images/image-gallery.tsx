@@ -55,16 +55,18 @@ export function ImageGallery({
   // Sync real-time updates from uploader
   useEffect(() => {
     if (newImage) {
-      let wasAdded = false;
       setImageList((prev) => {
-        if (prev.find((img) => img.id === newImage.id)) return prev;
-        wasAdded = true;
+        if (prev.find((p) => p.id === newImage.id)) return prev;
+
+        setModalImageList((mPrev) =>
+          mPrev.find((m) => m.id === newImage.id)
+            ? mPrev
+            : [newImage, ...mPrev],
+        );
+        setTotalImageCount((c) => c + 1);
+
         return [newImage, ...prev];
       });
-
-      if (wasAdded) {
-        setTotalImageCount((count) => count + 1);
-      }
     }
   }, [newImage]);
 
@@ -98,7 +100,8 @@ export function ImageGallery({
     setIsMoreModalOpen(true);
   }, []);
 
-  if (imageList.length === 0) {
+  if (modalImageList.length === 0) {
+
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-lg bg-card/50">
         <p className="text-muted-foreground font-medium">
@@ -111,7 +114,7 @@ export function ImageGallery({
     );
   }
 
-  const visibleImages = imageList.slice(0, GRID_LIMIT);
+  const visibleImages = modalImageList.slice(0, GRID_LIMIT);
   const displayedCount = visibleImages.length;
   const remainingCount = Math.max(0, totalImageCount - displayedCount);
   const hasMore = remainingCount > 0;

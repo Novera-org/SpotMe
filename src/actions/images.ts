@@ -9,6 +9,8 @@ import {
   imageMetadataSchema,
   imageIdSchema,
   getAlbumImagesSchema,
+  albumIdSchema,
+
 } from "@/lib/validations/images";
 import { generatePresignedUploadUrl, deleteFromR2, getObjectMetadata } from "@/lib/storage/upload";
 import { revalidatePath } from "next/cache";
@@ -238,7 +240,13 @@ export async function getAlbumImages(
   await verifyAlbumOwnership(validated.albumId, adminId);
 
   return db
-    .select()
+    .select({
+      id: images.id,
+      r2Url: images.r2Url,
+      filename: images.filename,
+      status: images.status,
+    })
+
     .from(images)
     .where(eq(images.albumId, validated.albumId))
     .limit(validated.limit)
@@ -247,28 +255,37 @@ export async function getAlbumImages(
 }
 
 export async function getAlbumImageCount(albumId: string) {
+  const validatedId = albumIdSchema.parse(albumId);
+
   const session = await requireAdmin();
   const adminId = session.user.id;
 
-  await verifyAlbumOwnership(albumId, adminId);
+  await verifyAlbumOwnership(validatedId, adminId);
 
   const [result] = await db
     .select({ count: sql<number>`count(*)` })
     .from(images)
-    .where(eq(images.albumId, albumId));
+    .where(eq(images.albumId, validatedId));
 
   return Number(result?.count ?? 0);
 }
 
 export async function getAllAlbumImages(albumId: string) {
+  const validatedId = albumIdSchema.parse(albumId);
+
   const session = await requireAdmin();
   const adminId = session.user.id;
 
-  await verifyAlbumOwnership(albumId, adminId);
+  await verifyAlbumOwnership(validatedId, adminId);
 
   return db
-    .select()
+    .select({
+      id: images.id,
+      r2Url: images.r2Url,
+      filename: images.filename,
+      status: images.status,
+    })
     .from(images)
-    .where(eq(images.albumId, albumId))
+    .where(eq(images.albumId, validatedId))
     .orderBy(desc(images.createdAt));
 }
