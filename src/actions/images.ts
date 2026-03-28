@@ -13,6 +13,7 @@ import {
 import { generatePresignedUploadUrl, deleteFromR2, getObjectMetadata } from "@/lib/storage/upload";
 import { revalidatePath } from "next/cache";
 import { eq, and, desc } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { albums } from "@/lib/db/schema";
 import { MAX_BATCH_SIZE } from "@/components/images/image-uploader/types";
 // ─── Types ───────────────────────────────────────────────────────
@@ -243,4 +244,18 @@ export async function getAlbumImages(
     .limit(validated.limit)
     .offset(validated.offset)
     .orderBy(desc(images.createdAt));
+}
+
+export async function getAlbumImageCount(albumId: string) {
+  const session = await requireAdmin();
+  const adminId = session.user.id;
+
+  await verifyAlbumOwnership(albumId, adminId);
+
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(images)
+    .where(eq(images.albumId, albumId));
+
+  return Number(result?.count ?? 0);
 }

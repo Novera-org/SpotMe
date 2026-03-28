@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { updateAlbum } from "@/actions/albums";
 import { ALBUM_STATUS } from "@/config/constants";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ interface AlbumStatusActionsProps {
 
 export function AlbumStatusActions({ albumId, currentStatus, compact = false }: AlbumStatusActionsProps) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const handleStatusUpdate = (e: React.MouseEvent, newStatus: string) => {
     e.preventDefault();
@@ -23,6 +25,7 @@ export function AlbumStatusActions({ albumId, currentStatus, compact = false }: 
     startTransition(async () => {
       try {
         await updateAlbum({ id: albumId, status: newStatus });
+        router.refresh();
         toast.success(`Album status updated to ${newStatus}`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to update status");
