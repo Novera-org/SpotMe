@@ -34,7 +34,7 @@ export function ImageGallery({
 }: ImageGalleryProps) {
   const [displayState, setDisplayState] = useState({
     imageList: initialImages,
-    modalImageList: allImages ?? initialImages,
+    modalImageList: initialImages,
     totalImageCount: totalCount,
   });
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
@@ -46,10 +46,10 @@ export function ImageGallery({
     setDisplayState((prev) => ({
       ...prev,
       imageList: initialImages,
-      modalImageList: allImages ?? initialImages,
+      modalImageList: initialImages,
       totalImageCount: totalCount,
     }));
-  }, [initialImages, allImages, totalCount]);
+  }, [initialImages, totalCount]);
 
   // Sync real-time updates from uploader
   useEffect(() => {
@@ -82,7 +82,7 @@ export function ImageGallery({
           modalImageList: prev.modalImageList.filter((img) => img.id !== imageId),
           totalImageCount: Math.max(0, prev.totalImageCount - 1),
         }));
-        if (selectedImage?.id === imageId) setSelectedImage(null);
+        setSelectedImage((prev) => (prev?.id === imageId ? null : prev));
       } catch (error) {
         console.error("Failed to delete image:", error);
         toast.error(
@@ -92,12 +92,18 @@ export function ImageGallery({
         setDeletingId(null);
       }
     },
-    [selectedImage],
+    [],
   );
 
   const handleOpenMoreModal = useCallback(() => {
+    if (allImages) {
+      setDisplayState((prev) => ({
+        ...prev,
+        modalImageList: allImages,
+      }));
+    }
     setIsMoreModalOpen(true);
-  }, []);
+  }, [allImages]);
 
   if (displayState.modalImageList.length === 0) {
 
