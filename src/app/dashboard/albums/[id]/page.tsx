@@ -1,6 +1,10 @@
 import { getAlbumById } from "@/actions/albums";
 import { getAlbumShareLinks } from "@/actions/share-links";
-import { getAlbumImages } from "@/actions/images";
+import {
+  getAlbumImages,
+  getAlbumImageCount,
+  getAllAlbumImages,
+} from "@/actions/images";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
 import { AlbumStatusActions } from "@/components/albums/album-status-actions";
 import { AlbumVisibilityBadge } from "@/components/albums/album-visibility-badge";
@@ -48,8 +52,11 @@ export default async function AlbumDetailPage({
   const links =
     album.status === ALBUM_STATUS.ACTIVE ? await getAlbumShareLinks(id) : [];
 
-  // Fetch initial batch (first 24)
-  const albumImages = await getAlbumImages(id, 24, 0);
+  const [albumImages, albumImageCount, allAlbumImages] = await Promise.all([
+    getAlbumImages(id, 24, 0),
+    getAlbumImageCount(id),
+    getAllAlbumImages(id),
+  ]);
 
   const publicUrl = `${APP_URL}/album/${album.slug}`;
   const visibility = album.settings?.requireLogin ? "private" : "public";
@@ -157,12 +164,17 @@ export default async function AlbumDetailPage({
               <ImageIcon className="h-6 w-6 text-primary" />
               Album Images
               <span className="text-sm font-sans font-normal text-muted-foreground ml-2">
-                ({albumImages.length} images)
+                ({albumImageCount} images)
               </span>
             </h2>
           </div>
 
-          <AlbumImageSection albumId={album.id} initialImages={albumImages} />
+          <AlbumImageSection
+            albumId={album.id}
+            initialImages={albumImages}
+            totalCount={albumImageCount}
+            allImages={allAlbumImages}
+          />
         </div>
 
         {/* Settings Display */}

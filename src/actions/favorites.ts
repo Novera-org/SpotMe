@@ -77,7 +77,7 @@ export async function toggleFavorite(albumId: string, imageId: string) {
     throw error;
   }
 
-  return { saved: true };
+  return { saved: true } ;
 }
 
 // ─── Get Favorites ───────────────────────────────────────────────

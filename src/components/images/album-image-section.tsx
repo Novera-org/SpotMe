@@ -14,9 +14,16 @@ interface ImageItem {
 interface AlbumImageSectionProps {
   albumId: string;
   initialImages: ImageItem[];
+  totalCount: number;
+  allImages?: ImageItem[];
 }
 
-export function AlbumImageSection({ albumId, initialImages }: AlbumImageSectionProps) {
+export function AlbumImageSection({
+  albumId,
+  initialImages,
+  totalCount,
+  allImages,
+}: AlbumImageSectionProps) {
   const [lastUploadedImage, setLastUploadedImage] = useState<ImageItem | null>(null);
 
   return (
@@ -30,7 +37,9 @@ export function AlbumImageSection({ albumId, initialImages }: AlbumImageSectionP
         <ImageGallery 
           images={initialImages} 
           albumId={albumId} 
-          newImage={lastUploadedImage} 
+          newImage={lastUploadedImage}
+          totalCount={totalCount}
+          allImages={allImages}
         />
       </div>
     </div>

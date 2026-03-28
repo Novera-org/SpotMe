@@ -23,7 +23,7 @@ export function ShareLinkItem({
   onReactivate,
 }: ShareLinkItemProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-muted/5 border border-border rounded-xl transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.3)] hover:border-primary/30">
+    <div className="flex flex-col gap-4 p-4 bg-muted/5 border border-border rounded-xl transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:scale-[1.005] hover:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.3)] hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-col gap-1.5 min-w-0">
         <div className="flex items-center gap-2">
           <code className="px-2 py-0.5 rounded bg-muted/20 text-primary font-mono text-sm font-bold">
@@ -35,7 +35,7 @@ export function ShareLinkItem({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="text-[10px] h-4">
             {link.accessCount} views
           </Badge>
@@ -48,12 +48,12 @@ export function ShareLinkItem({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
         <Button
           variant="outline"
           size="sm"
           onClick={onCopy}
-          className="h-8 text-xs gap-1.5"
+          className="h-8 w-full text-xs gap-1.5 whitespace-normal"
         >
           <Copy className="size-3.5" data-icon="inline-start" />
           {isCopied ? "Copied!" : "Copy Link"}
@@ -65,7 +65,7 @@ export function ShareLinkItem({
           className={buttonVariants({
             variant: "outline",
             size: "sm",
-            className: "h-8 text-xs gap-1.5",
+            className: "h-8 w-full text-xs gap-1.5 whitespace-normal",
           })}
         >
           <QrCode className="size-3.5" data-icon="inline-start" />
@@ -76,7 +76,7 @@ export function ShareLinkItem({
             variant="destructive"
             size="sm"
             onClick={onDeactivate}
-            className="h-8 text-xs gap-1.5 border-destructive/20 bg-destructive/5 hover:bg-destructive/10 text-destructive"
+            className="h-8 w-full text-xs gap-1.5 whitespace-normal border-destructive/20 bg-destructive/5 hover:bg-destructive/10 text-destructive"
           >
             <XCircle className="size-3.5" data-icon="inline-start" />
             Deactivate
@@ -86,7 +86,7 @@ export function ShareLinkItem({
             variant="outline"
             size="sm"
             onClick={onReactivate}
-            className="h-8 text-xs gap-1.5 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/15 hover:text-emerald-500"
+            className="h-8 w-full text-xs gap-1.5 whitespace-normal border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/15 hover:text-emerald-500"
           >
             <RotateCcw className="size-3.5" data-icon="inline-start" />
             Reactivate

@@ -18,6 +18,8 @@ interface ImageItem {
 interface ImageGalleryProps {
   images: ImageItem[];
   albumId: string;
+  totalCount: number;
+  allImages?: ImageItem[];
   newImage?: ImageItem | null;
 }
 
@@ -26,24 +28,41 @@ const GRID_LIMIT = 15;
 export function ImageGallery({
   images: initialImages,
   albumId,
+  totalCount,
+  allImages,
   newImage,
 }: ImageGalleryProps) {
-  const [imageList, setImageList] = useState(initialImages);
+  const [displayState, setDisplayState] = useState({
+    imageList: initialImages,
+    modalImageList: initialImages,
+    totalImageCount: totalCount,
+  });
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
   const [isMoreModalOpen, setIsMoreModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Sync when initialImages prop changes (e.g., server refresh)
   useEffect(() => {
-    setImageList(initialImages);
-  }, [initialImages]);
+    setDisplayState((prev) => ({
+      ...prev,
+      imageList: initialImages,
+      modalImageList: initialImages,
+      totalImageCount: totalCount,
+    }));
+  }, [initialImages, totalCount]);
 
   // Sync real-time updates from uploader
   useEffect(() => {
     if (newImage) {
-      setImageList((prev) => {
-        if (prev.find((img) => img.id === newImage.id)) return prev;
-        return [newImage, ...prev];
+      setDisplayState((prev) => {
+        const alreadyExists = prev.modalImageList.some((img) => img.id === newImage.id);
+        if (alreadyExists) return prev;
+
+        return {
+          imageList: [newImage, ...prev.imageList],
+          modalImageList: [newImage, ...prev.modalImageList],
+          totalImageCount: prev.totalImageCount + 1,
+        };
       });
     }
   }, [newImage]);
@@ -58,8 +77,12 @@ export function ImageGallery({
       setDeletingId(imageId);
       try {
         await deleteImage(imageId);
-        setImageList((prev) => prev.filter((img) => img.id !== imageId));
-        if (selectedImage?.id === imageId) setSelectedImage(null);
+        setDisplayState((prev) => ({
+          imageList: prev.imageList.filter((img) => img.id !== imageId),
+          modalImageList: prev.modalImageList.filter((img) => img.id !== imageId),
+          totalImageCount: Math.max(0, prev.totalImageCount - 1),
+        }));
+        setSelectedImage((prev) => (prev?.id === imageId ? null : prev));
       } catch (error) {
         console.error("Failed to delete image:", error);
         toast.error(
@@ -69,10 +92,21 @@ export function ImageGallery({
         setDeletingId(null);
       }
     },
-    [selectedImage],
+    [],
   );
 
-  if (imageList.length === 0) {
+  const handleOpenMoreModal = useCallback(() => {
+    if (allImages) {
+      setDisplayState((prev) => ({
+        ...prev,
+        modalImageList: allImages,
+      }));
+    }
+    setIsMoreModalOpen(true);
+  }, [allImages]);
+
+  if (displayState.modalImageList.length === 0) {
+
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-lg bg-card/50">
         <p className="text-muted-foreground font-medium">
@@ -85,8 +119,12 @@ export function ImageGallery({
     );
   }
 
-  const visibleImages = imageList.slice(0, GRID_LIMIT);
-  const hasMore = imageList.length > GRID_LIMIT;
+  const visibleImages = displayState.modalImageList.slice(0, GRID_LIMIT);
+  const displayedCount = visibleImages.length;
+  const fullListCount =
+    allImages !== undefined ? displayState.modalImageList.length : displayState.totalImageCount;
+  const remainingCount = Math.max(0, fullListCount - displayedCount);
+  const hasMore = remainingCount > 0;
 
   return (
     <>
@@ -140,10 +178,10 @@ export function ImageGallery({
             <Button
               variant="outline"
               size="lg"
-              onClick={() => setIsMoreModalOpen(true)}
+              onClick={handleOpenMoreModal}
               className="min-w-[200px] font-sans tracking-wide"
             >
-              Show More Images ({imageList.length - GRID_LIMIT} more)
+              {`Show More Images (${remainingCount} more)`}
             </Button>
           </div>
         )}
@@ -158,7 +196,7 @@ export function ImageGallery({
 
       {/* "More Images" Modal */}
       <MoreImagesModal
-        images={imageList}
+        images={displayState.modalImageList}
         isOpen={isMoreModalOpen}
         onClose={() => setIsMoreModalOpen(false)}
         onImageClick={(img) => {

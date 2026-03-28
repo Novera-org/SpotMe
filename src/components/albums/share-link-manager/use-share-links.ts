@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createShareLink, deactivateShareLink, reactivateShareLink } from "@/actions/share-links";
 import { APP_URL } from "@/config/constants";
 import { toast } from "sonner";
@@ -16,12 +17,14 @@ export function useShareLinks({ albumId, slug, initialLinks }: UseShareLinksProp
   const [links, setLinks] = useState(initialLinks);
   const [isCreating, setIsCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleCreate = useCallback(async () => {
     setIsCreating(true);
     try {
       const newLink = await createShareLink({ albumId });
       setLinks((prev) => [...prev, newLink]);
+      router.refresh();
       toast.success("Share link created successfully");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create share link");
@@ -38,6 +41,7 @@ export function useShareLinks({ albumId, slug, initialLinks }: UseShareLinksProp
           l.id === linkId ? { ...l, isActive: false, deactivatedAt: new Date() } : l
         )
       );
+      router.refresh();
       toast.success("Share link deactivated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to deactivate share link");
@@ -52,6 +56,7 @@ export function useShareLinks({ albumId, slug, initialLinks }: UseShareLinksProp
           l.id === linkId ? { ...l, isActive: true, deactivatedAt: null } : l
         )
       );
+      router.refresh();
       toast.success("Share link reactivated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to reactivate share link");
