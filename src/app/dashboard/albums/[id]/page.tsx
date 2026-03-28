@@ -9,7 +9,13 @@ import { AlbumImageSection } from "@/components/images/album-image-section";
 import { APP_URL, ALBUM_STATUS } from "@/config/constants";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Image as ImageIcon, Settings2, Share2, Info } from "lucide-react";
+import {
+  ArrowLeft,
+  Image as ImageIcon,
+  Settings2,
+  Share2,
+  Info,
+} from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 import {
@@ -71,7 +77,10 @@ export default async function AlbumDetailPage({
             <div className="flex items-center gap-4">
               <AlbumStatusBadge status={album.status} />
               <AlbumVisibilityBadge visibility={visibility} />
-              <AlbumStatusActions albumId={album.id} currentStatus={album.status} />
+              <AlbumStatusActions
+                albumId={album.id}
+                currentStatus={album.status}
+              />
             </div>
           </div>
           {album.description && (
@@ -81,7 +90,12 @@ export default async function AlbumDetailPage({
           )}
           <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5" />
-            Created on {formatDate(album.createdAt, { year: 'numeric', month: 'long', day: 'numeric' })}
+            Created on{" "}
+            {formatDate(album.createdAt, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </p>
         </div>
       </div>
@@ -101,7 +115,9 @@ export default async function AlbumDetailPage({
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-foreground">Public Album URL</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Public Album URL
+                </h3>
                 <code className="block p-3 bg-muted/20 border border-border rounded-lg text-sm select-all text-primary font-mono break-all">
                   {publicUrl}
                 </code>
@@ -124,8 +140,11 @@ export default async function AlbumDetailPage({
             <CardContent>
               <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm text-yellow-500 font-medium">
                 Sharing is unavailable because this album is currently in{" "}
-                <span className="font-bold underline decoration-yellow-500/30 underline-offset-4">{album.status}</span> status. Activation is required to
-                generate public URLs or share links.
+                <span className="font-bold underline decoration-yellow-500/30 underline-offset-4">
+                  {album.status}
+                </span>{" "}
+                status. Activation is required to generate public URLs or share
+                links.
               </div>
             </CardContent>
           </Card>
@@ -143,10 +162,7 @@ export default async function AlbumDetailPage({
             </h2>
           </div>
 
-          <AlbumImageSection 
-            albumId={album.id} 
-            initialImages={albumImages} 
-          />
+          <AlbumImageSection albumId={album.id} initialImages={albumImages} />
         </div>
 
         {/* Settings Display */}
@@ -161,31 +177,57 @@ export default async function AlbumDetailPage({
             <CardContent className="pt-6">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Visibility</span>
-                  <div className="font-medium text-foreground capitalize">{visibility}</div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Visibility
+                  </span>
+                  <div className="font-medium text-foreground capitalize">
+                    {visibility}
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Allow Downloads</span>
-                  <div className="font-medium text-foreground">{album.settings.allowDownloads ? "Yes" : "No"}</div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Allow Downloads
+                  </span>
+                  <div className="font-medium text-foreground">
+                    {album.settings.allowDownloads ? "Yes" : "No"}
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Watermark</span>
-                  <div className="font-medium text-foreground">{album.settings.watermark ? "Yes" : "No"}</div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Watermark
+                  </span>
+                  <div className="font-medium text-foreground">
+                    {album.settings.watermark ? "Yes" : "No"}
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Require Login</span>
-                  <div className="font-medium text-foreground">{album.settings.requireLogin ? "Yes" : "No"}</div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Require Login
+                  </span>
+                  <div className="font-medium text-foreground">
+                    {album.settings.requireLogin ? "Yes" : "No"}
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Max Selfies</span>
-                  <div className="font-medium text-foreground">{album.settings.maxSelfies}</div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Max Selfies
+                  </span>
+                  <div className="font-medium text-foreground">
+                    {album.settings.maxSelfies}
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Match Threshold</span>
-                  <div className="font-medium text-foreground">{album.settings.matchThreshold}</div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Match Threshold
+                  </span>
+                  <div className="font-medium text-foreground">
+                    {album.settings.matchThreshold}
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Link Expires</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Link Expires
+                  </span>
                   <div className="font-medium text-foreground">
                     {album.settings.linkExpiresAt
                       ? formatDate(album.settings.linkExpiresAt)

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/utils";
 
 export default function NotFoundPage() {
   return (
@@ -24,9 +25,12 @@ export default function NotFoundPage() {
           </p>
         </div>
 
-        <Link href="/" className={buttonVariants({ variant: "outline" }) + " gap-1.5"}>
+        <Link
+          href="/dashboard"
+          className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
+        >
           <ArrowLeft className="size-4" data-icon="inline-start" />
-          Back to Home
+          Back to Dashboard
         </Link>
       </div>
     </div>
