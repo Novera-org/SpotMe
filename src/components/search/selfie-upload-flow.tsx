@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -35,6 +35,8 @@ export function SelfieUploadFlow({
   requireLogin,
 }: SelfieUploadFlowProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<FlowStep>("upload");
@@ -47,6 +49,13 @@ export function SelfieUploadFlow({
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
   const MAX_FILE_SIZE_MB = 10;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+  const callbackUrl = `${pathname}${
+    searchParams.toString() ? `?${searchParams.toString()}` : ""
+  }`;
+
+  const goToAuth = (mode: "sign-in" | "sign-up") => {
+    router.push(`/${mode}?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  };
 
   const isValidImageFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number])) {
@@ -66,9 +75,7 @@ export function SelfieUploadFlow({
       toast.warning(
         "This album is private. Please sign in first so we can verify access before you upload.",
       );
-      router.push(
-        `/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
-      );
+      goToAuth("sign-in");
       return;
     }
 
@@ -121,9 +128,7 @@ export function SelfieUploadFlow({
       toast.warning(
         "This album is private. Please sign in first so we can verify access before searching.",
       );
-      router.push(
-        `/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
-      );
+      goToAuth("sign-in");
       return;
     }
 
@@ -222,17 +227,51 @@ export function SelfieUploadFlow({
   // ─── Step: Upload ────────────────────────────────────────────────
 
   if (step === "upload") {
+    if (requireLogin && !session) {
+      return (
+        <div className="rounded-2xl border border-border bg-muted/10 overflow-hidden">
+          <div className="border-b border-border bg-muted/20 px-5 py-4">
+            <div className="flex items-center gap-3 text-base font-semibold text-foreground sm:text-lg">
+              <AlertCircle className="size-5 text-primary" />
+              Private Album Access Required
+            </div>
+          </div>
+          <div className="space-y-5 px-5 py-6 sm:px-6 sm:py-7">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-serif text-balance text-foreground sm:text-3xl">
+                Sign in to search this album
+              </h2>
+              <p className="text-base leading-7 text-muted-foreground sm:text-lg">
+                This album is private, so you need an account before you can
+                upload a selfie and view your matching photos.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                type="button"
+                size="lg"
+                className="w-full"
+                onClick={() => goToAuth("sign-in")}
+              >
+                Sign In To Continue
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                className="w-full"
+                onClick={() => goToAuth("sign-up")}
+              >
+                Create New Account
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-6">
-        {requireLogin && !session && (
-          <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-            <AlertCircle className="size-4 mt-0.5 shrink-0 text-destructive" />
-            <p>
-              This album is private. Sign in to upload a selfie and search for
-              your photos.
-            </p>
-          </div>
-        )}
         <div className="text-center">
           <h2 className="text-lg font-serif text-balance">
             Upload a selfie to find your photos

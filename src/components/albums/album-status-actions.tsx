@@ -6,7 +6,7 @@ import { updateAlbum } from "@/actions/albums";
 import { ALBUM_STATUS } from "@/config/constants";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, PlayCircle, Archive, Undo2 } from "lucide-react";
+import { Loader2, PlayCircle, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AlbumStatusActionsProps {
@@ -56,26 +56,6 @@ export function AlbumStatusActions({ albumId, currentStatus, compact = false }: 
       )}
 
       {/* Secondary Actions using outline/ghost variants */}
-      {currentStatus === ALBUM_STATUS.ACTIVE && (
-        <Button
-          variant="outline"
-          size={compact ? "sm" : "default"}
-          onClick={(e) => handleStatusUpdate(e, ALBUM_STATUS.ARCHIVED)}
-          disabled={isPending}
-          className={cn(
-            "gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors",
-            compact && "h-8 px-3 text-xs"
-          )}
-        >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Archive className="h-4 w-4" />
-          )}
-          {compact ? "Archive" : "Archive Album"}
-        </Button>
-      )}
-
       {currentStatus === ALBUM_STATUS.ARCHIVED && (
         <Button
           variant="outline"
