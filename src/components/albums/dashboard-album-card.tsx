@@ -12,7 +12,6 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { formatDate } from "@/lib/utils";
 
 interface DashboardAlbumCardProps {
   album: {
@@ -24,7 +23,7 @@ interface DashboardAlbumCardProps {
     searchCount: number;
     matchCount: number;
     downloadCount: number;
-    createdAt: Date;
+    createdAtLabel: string;
   };
   index: number;
 }
@@ -99,7 +98,7 @@ export function DashboardAlbumCard({
         </div>
       </CardContent>
       <CardFooter className="pt-0 mt-auto text-xs text-muted-foreground border-t p-4 pb-4">
-        Created on {formatDate(album.createdAt)}
+        Created on {album.createdAtLabel}
       </CardFooter>
     </Card>
   );

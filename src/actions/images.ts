@@ -259,3 +259,16 @@ export async function getAlbumImageCount(albumId: string) {
 
   return Number(result?.count ?? 0);
 }
+
+export async function getAllAlbumImages(albumId: string) {
+  const session = await requireAdmin();
+  const adminId = session.user.id;
+
+  await verifyAlbumOwnership(albumId, adminId);
+
+  return db
+    .select()
+    .from(images)
+    .where(eq(images.albumId, albumId))
+    .orderBy(desc(images.createdAt));
+}

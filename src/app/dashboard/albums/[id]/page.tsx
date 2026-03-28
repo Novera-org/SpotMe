@@ -1,6 +1,10 @@
 import { getAlbumById } from "@/actions/albums";
 import { getAlbumShareLinks } from "@/actions/share-links";
-import { getAlbumImages, getAlbumImageCount } from "@/actions/images";
+import {
+  getAlbumImages,
+  getAlbumImageCount,
+  getAllAlbumImages,
+} from "@/actions/images";
 import { AlbumStatusBadge } from "@/components/albums/album-status-badge";
 import { AlbumStatusActions } from "@/components/albums/album-status-actions";
 import { AlbumVisibilityBadge } from "@/components/albums/album-visibility-badge";
@@ -48,9 +52,10 @@ export default async function AlbumDetailPage({
   const links =
     album.status === ALBUM_STATUS.ACTIVE ? await getAlbumShareLinks(id) : [];
 
-  const [albumImages, albumImageCount] = await Promise.all([
+  const [albumImages, albumImageCount, allAlbumImages] = await Promise.all([
     getAlbumImages(id, 24, 0),
     getAlbumImageCount(id),
+    getAllAlbumImages(id),
   ]);
 
   const publicUrl = `${APP_URL}/album/${album.slug}`;
@@ -164,7 +169,12 @@ export default async function AlbumDetailPage({
             </h2>
           </div>
 
-          <AlbumImageSection albumId={album.id} initialImages={albumImages} />
+          <AlbumImageSection
+            albumId={album.id}
+            initialImages={albumImages}
+            totalCount={albumImageCount}
+            allImages={allAlbumImages}
+          />
         </div>
 
         {/* Settings Display */}

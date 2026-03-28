@@ -4,6 +4,7 @@ import { getDashboardStats } from "@/actions/stats";
 import { DashboardAlbumCard } from "@/components/albums/dashboard-album-card";
 import { StatCard, RecentActivityList } from "@/components/albums/album-stats";
 import { buttonVariants } from "@/components/ui/button-variants";
+import { formatDate } from "@/lib/utils";
 import {
   Card,
   CardHeader,
@@ -57,7 +58,10 @@ export default async function DashboardPage() {
               {stats.albumStats.map((album, index) => (
                 <DashboardAlbumCard
                   key={album.albumId}
-                  album={album}
+                  album={{
+                    ...album,
+                    createdAtLabel: formatDate(album.createdAt),
+                  }}
                   index={index}
                 />
               ))}
