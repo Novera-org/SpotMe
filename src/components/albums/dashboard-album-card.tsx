@@ -116,11 +116,14 @@ function MetricItem({
 }) {
   return (
     <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-sans">
-      {icon}
+      <div aria-hidden="true">{icon}</div>
+      <span className="sr-only">{label}</span>
       <span className="font-medium text-foreground tabular-nums">
         {value.toLocaleString()}
       </span>
-      <span className="hidden sm:inline">{label}</span>
+      <span className="hidden sm:inline" aria-hidden="true">
+        {label}
+      </span>
     </div>
   );
 }

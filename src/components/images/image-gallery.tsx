@@ -32,40 +32,37 @@ export function ImageGallery({
   allImages,
   newImage,
 }: ImageGalleryProps) {
-  const [imageList, setImageList] = useState(initialImages);
-  const [modalImageList, setModalImageList] = useState(allImages ?? initialImages);
-  const [totalImageCount, setTotalImageCount] = useState(totalCount);
+  const [displayState, setDisplayState] = useState({
+    imageList: initialImages,
+    modalImageList: allImages ?? initialImages,
+    totalImageCount: totalCount,
+  });
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
   const [isMoreModalOpen, setIsMoreModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Sync when initialImages prop changes (e.g., server refresh)
   useEffect(() => {
-    setImageList(initialImages);
-  }, [initialImages]);
-
-  useEffect(() => {
-    setModalImageList(allImages ?? initialImages);
-  }, [allImages, initialImages]);
-
-  useEffect(() => {
-    setTotalImageCount(totalCount);
-  }, [totalCount]);
+    setDisplayState((prev) => ({
+      ...prev,
+      imageList: initialImages,
+      modalImageList: allImages ?? initialImages,
+      totalImageCount: totalCount,
+    }));
+  }, [initialImages, allImages, totalCount]);
 
   // Sync real-time updates from uploader
   useEffect(() => {
     if (newImage) {
-      setImageList((prev) => {
-        if (prev.find((p) => p.id === newImage.id)) return prev;
+      setDisplayState((prev) => {
+        const alreadyExists = prev.modalImageList.some((img) => img.id === newImage.id);
+        if (alreadyExists) return prev;
 
-        setModalImageList((mPrev) =>
-          mPrev.find((m) => m.id === newImage.id)
-            ? mPrev
-            : [newImage, ...mPrev],
-        );
-        setTotalImageCount((c) => c + 1);
-
-        return [newImage, ...prev];
+        return {
+          imageList: [newImage, ...prev.imageList],
+          modalImageList: [newImage, ...prev.modalImageList],
+          totalImageCount: prev.totalImageCount + 1,
+        };
       });
     }
   }, [newImage]);
@@ -80,9 +77,11 @@ export function ImageGallery({
       setDeletingId(imageId);
       try {
         await deleteImage(imageId);
-        setImageList((prev) => prev.filter((img) => img.id !== imageId));
-        setModalImageList((prev) => prev.filter((img) => img.id !== imageId));
-        setTotalImageCount((count) => Math.max(0, count - 1));
+        setDisplayState((prev) => ({
+          imageList: prev.imageList.filter((img) => img.id !== imageId),
+          modalImageList: prev.modalImageList.filter((img) => img.id !== imageId),
+          totalImageCount: Math.max(0, prev.totalImageCount - 1),
+        }));
         if (selectedImage?.id === imageId) setSelectedImage(null);
       } catch (error) {
         console.error("Failed to delete image:", error);
@@ -100,7 +99,7 @@ export function ImageGallery({
     setIsMoreModalOpen(true);
   }, []);
 
-  if (modalImageList.length === 0) {
+  if (displayState.modalImageList.length === 0) {
 
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-border rounded-lg bg-card/50">
@@ -114,9 +113,11 @@ export function ImageGallery({
     );
   }
 
-  const visibleImages = modalImageList.slice(0, GRID_LIMIT);
+  const visibleImages = displayState.modalImageList.slice(0, GRID_LIMIT);
   const displayedCount = visibleImages.length;
-  const remainingCount = Math.max(0, totalImageCount - displayedCount);
+  const fullListCount =
+    allImages !== undefined ? displayState.modalImageList.length : displayState.totalImageCount;
+  const remainingCount = Math.max(0, fullListCount - displayedCount);
   const hasMore = remainingCount > 0;
 
   return (
@@ -189,7 +190,7 @@ export function ImageGallery({
 
       {/* "More Images" Modal */}
       <MoreImagesModal
-        images={modalImageList}
+        images={displayState.modalImageList}
         isOpen={isMoreModalOpen}
         onClose={() => setIsMoreModalOpen(false)}
         onImageClick={(img) => {
