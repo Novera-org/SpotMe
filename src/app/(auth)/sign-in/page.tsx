@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/account";
+  const resetStatus = searchParams.get("reset");
   const signUpHref = `/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   const forgotPasswordHref = `/forgot-password?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   const [state, formAction, isPending] = useActionState<
@@ -32,6 +33,12 @@ export default function SignInPage() {
       <p className="mb-6 text-sm text-muted-foreground">
         Welcome back - log in to your account.
       </p>
+
+      {resetStatus === "success" && (
+        <p className="mb-4 text-sm text-muted-foreground" role="status">
+          Your password has been reset. You can sign in with your new password now.
+        </p>
+      )}
 
       <form action={formAction} className="auth-form">
         <input name="callbackUrl" type="hidden" value={callbackUrl} />
