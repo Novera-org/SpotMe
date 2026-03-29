@@ -1,52 +1,70 @@
-const INVALID_EMAIL_OR_PASSWORD = "Invalid email or password";
-const EMAIL_NOT_VERIFIED = "Email not verified";
-const INVALID_PASSWORD = "Invalid password";
-const PASSWORD_TOO_SHORT = "Password too short";
-const PASSWORD_TOO_LONG = "Password too long";
-const TOKEN_EXPIRED = "Token expired";
-const INVALID_TOKEN = "Invalid token";
-const CREDENTIAL_ACCOUNT_NOT_FOUND = "Credential account not found";
+import { auth } from "@/lib/auth";
+
+type BetterAuthErrorCode = keyof typeof auth.$ERROR_CODES;
+
+function getErrorCode(error: unknown): string {
+  if (error && typeof error === "object" && "code" in error && typeof error.code === "string") {
+    return error.code;
+  }
+
+  return "";
+}
 
 export function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;
   }
 
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+
   return "";
 }
 
-export function isMessage(error: unknown, expected: string) {
-  return getErrorMessage(error).includes(expected);
+function matchesError(error: unknown, expectedCode: BetterAuthErrorCode) {
+  const expected = auth.$ERROR_CODES[expectedCode];
+
+  if (getErrorCode(error) === expected.code) {
+    return true;
+  }
+
+  /**
+   * Better Auth v1.5.2 exposes structured error codes, but some server-action
+   * call sites can still surface wrapped errors where only the message survives.
+   * Keep this fallback until integration tests cover every thrown shape we rely on.
+   */
+  return getErrorMessage(error).includes(expected.message);
 }
 
 export function isInvalidEmailOrPasswordError(error: unknown) {
-  return isMessage(error, INVALID_EMAIL_OR_PASSWORD);
+  return matchesError(error, "INVALID_EMAIL_OR_PASSWORD");
 }
 
 export function isEmailNotVerifiedError(error: unknown) {
-  return isMessage(error, EMAIL_NOT_VERIFIED);
+  return matchesError(error, "EMAIL_NOT_VERIFIED");
 }
 
 export function isInvalidPasswordError(error: unknown) {
-  return isMessage(error, INVALID_PASSWORD);
+  return matchesError(error, "INVALID_PASSWORD");
 }
 
 export function isPasswordTooShortError(error: unknown) {
-  return isMessage(error, PASSWORD_TOO_SHORT);
+  return matchesError(error, "PASSWORD_TOO_SHORT");
 }
 
 export function isPasswordTooLongError(error: unknown) {
-  return isMessage(error, PASSWORD_TOO_LONG);
+  return matchesError(error, "PASSWORD_TOO_LONG");
 }
 
 export function isTokenExpiredError(error: unknown) {
-  return isMessage(error, TOKEN_EXPIRED);
+  return matchesError(error, "TOKEN_EXPIRED");
 }
 
 export function isInvalidTokenError(error: unknown) {
-  return isMessage(error, INVALID_TOKEN);
+  return matchesError(error, "INVALID_TOKEN");
 }
 
 export function isCredentialAccountNotFoundError(error: unknown) {
-  return isMessage(error, CREDENTIAL_ACCOUNT_NOT_FOUND);
+  return matchesError(error, "CREDENTIAL_ACCOUNT_NOT_FOUND");
 }
