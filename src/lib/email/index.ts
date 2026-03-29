@@ -147,11 +147,7 @@ async function sendEmail({ to, subject, html, text }: SendEmailInput) {
 
   if (!smtpConfigured) {
     if (process.env.NODE_ENV !== "production") {
-      processLogger.info("[email] Using development email preview fallback.", {
-        to,
-        subject,
-        previewText: text,
-      });
+      processLogger.info("[email] Using development email preview fallback.");
       return;
     }
 
@@ -196,13 +192,7 @@ async function sendEmail({ to, subject, html, text }: SendEmailInput) {
       text,
       html,
     });
-    processLogger.info("[email] Auth email sent via SMTP.", {
-      to,
-      subject,
-      smtpHost,
-      smtpPort,
-      smtpSecure,
-    });
+    processLogger.info("[email] Auth email handed off to SMTP transport.");
   } catch (error) {
     processLogger.error("[email] Failed to send auth email via SMTP.", error);
     throw new Error("Failed to send auth email.");

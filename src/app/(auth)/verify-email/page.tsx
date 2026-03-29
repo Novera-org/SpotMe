@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import {
+  getVerifyState,
+  normalizeAuthCallbackUrl,
+} from "@/lib/auth/verify-state";
+import { isTokenExpiredError } from "@/lib/auth/error-messages";
 import { VerificationResendForm } from "@/components/auth/verification-resend-form";
 import { processLogger } from "@/lib/logger";
 
 type SearchParamValue = string | string[] | undefined;
 type SearchParams = Promise<Record<string, SearchParamValue>>;
-
-const DEFAULT_POST_VERIFY_PATH = "/account";
 
 function getSearchParamValue(value: SearchParamValue) {
   if (Array.isArray(value)) {
@@ -15,14 +18,6 @@ function getSearchParamValue(value: SearchParamValue) {
   }
 
   return value;
-}
-
-function normalizeCallbackUrl(rawValue: string | undefined) {
-  if (rawValue && rawValue.startsWith("/") && !rawValue.startsWith("//")) {
-    return rawValue;
-  }
-
-  return DEFAULT_POST_VERIFY_PATH;
 }
 
 function buildSignInHref(callbackUrl: string) {
@@ -87,14 +82,17 @@ export default async function VerifyEmailPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
+  const verifyState = await getVerifyState();
   const token = getSearchParamValue(params.token);
-  const callbackUrl = normalizeCallbackUrl(
-    getSearchParamValue(params.callbackUrl) ??
-      getSearchParamValue(params.callbackURL),
-  );
-  const email =
-    getSearchParamValue(params.email) ??
-    (typeof token === "string" ? tryDecodeEmailFromToken(token) : null);
+  const callbackUrl = token
+    ? normalizeAuthCallbackUrl(
+        getSearchParamValue(params.callbackUrl) ??
+          getSearchParamValue(params.callbackURL),
+      )
+    : verifyState?.callbackUrl ?? normalizeAuthCallbackUrl(null);
+  const email = token
+    ? tryDecodeEmailFromToken(token) ?? verifyState?.email ?? null
+    : verifyState?.email ?? null;
 
   let status: "pending" | "success" | "expired" | "invalid" = "pending";
 
@@ -108,10 +106,7 @@ export default async function VerifyEmailPage({
     } catch (error) {
       const details = getAuthErrorDetails(error);
       processLogger.debug("[verify-email] Verification failed.", details);
-      status =
-        details.code === "TOKEN_EXPIRED" || details.message === "Token expired"
-          ? "expired"
-          : "invalid";
+      status = isTokenExpiredError(error) ? "expired" : "invalid";
     }
   }
 

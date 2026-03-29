@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 
 export default function SignInPage() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/account";
   const signUpHref = `/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   const [state, formAction, isPending] = useActionState<
     AuthActionState | null,

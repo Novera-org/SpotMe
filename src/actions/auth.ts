@@ -3,6 +3,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import {
+  normalizeAuthCallbackUrl,
+  setVerifyState,
+} from "@/lib/auth/verify-state";
 import { isAuthEmailSendingEnabled } from "@/lib/email";
 import { processLogger } from "@/lib/logger";
 import {
@@ -18,21 +22,6 @@ export interface AuthActionState {
 export interface VerificationEmailActionState {
   error: string | null;
   success: string | null;
-}
-
-const DEFAULT_POST_VERIFY_PATH = "/account";
-
-function normalizeCallbackUrl(
-  rawValue: FormDataEntryValue | string | null | undefined,
-) {
-  const value =
-    typeof rawValue === "string" ? rawValue.trim() : rawValue?.toString().trim();
-
-  if (value && value.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return DEFAULT_POST_VERIFY_PATH;
 }
 
 export async function signInAction(
@@ -96,7 +85,9 @@ export async function signUpAction(
     return { error: parsed.error.issues[0].message };
   }
 
-  const callbackUrl = normalizeCallbackUrl(formData.get("callbackUrl"));
+  const callbackUrl = normalizeAuthCallbackUrl(
+    formData.get("callbackUrl")?.toString(),
+  );
 
   try {
     await auth.api.signUpEmail({
@@ -118,12 +109,12 @@ export async function signUpAction(
     return { error: message };
   }
 
-  const verifyPageParams = new URLSearchParams({
+  await setVerifyState({
     email: parsed.data.email,
     callbackUrl,
   });
 
-  redirect(`/verify-email?${verifyPageParams.toString()}`);
+  redirect("/verify-email");
 }
 
 export async function sendVerificationEmailAction(
@@ -147,10 +138,19 @@ export async function sendVerificationEmailAction(
   }
 
   try {
+    const callbackUrl = normalizeAuthCallbackUrl(
+      formData.get("callbackUrl")?.toString(),
+    );
+
+    await setVerifyState({
+      email: parsed.data.email,
+      callbackUrl,
+    });
+
     await auth.api.sendVerificationEmail({
       body: {
         email: parsed.data.email,
-        callbackURL: normalizeCallbackUrl(formData.get("callbackUrl")),
+        callbackURL: callbackUrl,
       },
       headers: await headers(),
     });
