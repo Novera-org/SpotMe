@@ -1,8 +1,12 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { USER_ROLE } from "@/config/constants";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { user as userTable } from "@/lib/db/schema";
 import {
   isEmailNotVerifiedError,
   isInvalidTokenError,
@@ -47,6 +51,10 @@ export interface ResetPasswordActionState {
 }
 
 const RESET_PASSWORD_PATH = "/reset-password";
+
+function getRoleForAudience(audience: "user" | "event-holder") {
+  return audience === "event-holder" ? USER_ROLE.ADMIN : USER_ROLE.USER;
+}
 
 function buildResetPasswordRedirect(callbackUrl: string) {
   const params = new URLSearchParams({
@@ -141,6 +149,7 @@ export async function signUpAction(
 
   const raw = {
     name: formData.get("name") as string,
+    audience: formData.get("audience") as string,
     email: formData.get("email") as string,
     password: formData.get("password") as string,
     confirmPassword: formData.get("confirmPassword") as string,
@@ -154,9 +163,12 @@ export async function signUpAction(
   const callbackUrl = normalizeAuthCallbackUrl(
     formData.get("callbackUrl")?.toString(),
   );
+  const role = getRoleForAudience(parsed.data.audience);
+
+  let createdUserId: string;
 
   try {
-    await auth.api.signUpEmail({
+    const result = await auth.api.signUpEmail({
       body: {
         name: parsed.data.name,
         email: parsed.data.email,
@@ -165,6 +177,7 @@ export async function signUpAction(
       },
       headers: await headers(),
     });
+    createdUserId = result.user.id;
   } catch (error: unknown) {
     processLogger.error("[signUpAction] Sign-up failed:", error);
 
@@ -173,6 +186,23 @@ export async function signUpAction(
         ? "An account with this email already exists"
         : "Failed to create account, please try again";
     return { error: message };
+  }
+
+  if (role !== USER_ROLE.USER) {
+    try {
+      await db
+        .update(userTable)
+        .set({ role })
+        .where(eq(userTable.id, createdUserId));
+    } catch (error: unknown) {
+      processLogger.error(
+        `[signUpAction] Failed to assign event holder role for user ${createdUserId}: ${sanitizeErrorMessage(error)}`,
+      );
+      return {
+        error:
+          "Your account was created, but we couldn't finish setting up event holder access. Please contact support before signing in.",
+      };
+    }
   }
 
   await setVerifyState({

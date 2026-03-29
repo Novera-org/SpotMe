@@ -26,6 +26,48 @@ export default function SignUpPage() {
       <form action={formAction} className="auth-form">
         <input name="callbackUrl" type="hidden" value={callbackUrl} />
 
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-medium text-foreground">
+            I&apos;m signing up as
+          </legend>
+
+          <label className="flex cursor-pointer items-start gap-3 border border-border p-4 transition-colors hover:bg-muted/10">
+            <input
+              type="radio"
+              name="audience"
+              value="user"
+              className="mt-1"
+              required
+            />
+            <span className="space-y-1">
+              <span className="block text-sm font-semibold text-foreground">
+                Normal User
+              </span>
+              <span className="block text-sm text-muted-foreground">
+                Search private albums, save favorites, and manage your own account.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-3 border border-border p-4 transition-colors hover:bg-muted/10">
+            <input
+              type="radio"
+              name="audience"
+              value="event-holder"
+              className="mt-1"
+              required
+            />
+            <span className="space-y-1">
+              <span className="block text-sm font-semibold text-foreground">
+                Event Holder
+              </span>
+              <span className="block text-sm text-muted-foreground">
+                Create albums, upload images, manage settings, and access the dashboard.
+              </span>
+            </span>
+          </label>
+        </fieldset>
+
         <div className="space-y-1.5">
           <Label htmlFor="name">
             Name

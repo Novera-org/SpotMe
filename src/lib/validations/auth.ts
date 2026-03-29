@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export const signUpAudienceSchema = z.enum(["user", "event-holder"], {
+  error: "Choose whether you're signing up as a normal user or an event holder",
+});
+
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
@@ -16,6 +20,7 @@ export const signInSchema = z.object({
 export const signUpSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters").max(100),
+    audience: signUpAudienceSchema,
     email: z.string().email("Invalid email address"),
     password: passwordSchema,
     confirmPassword: z.string(),
@@ -75,6 +80,7 @@ export const resetPasswordSchema = z
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type SignUpAudienceInput = z.infer<typeof signUpAudienceSchema>;
 export type VerificationEmailRequestInput = z.infer<
   typeof verificationEmailRequestSchema
 >;
