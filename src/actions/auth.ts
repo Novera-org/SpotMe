@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { checkVerificationEmailRateLimit } from "@/lib/auth/verification-rate-limit";
 import {
   normalizeAuthCallbackUrl,
   setVerifyState,
@@ -138,6 +139,19 @@ export async function sendVerificationEmailAction(
   }
 
   try {
+    const requestHeaders = await headers();
+    const allowed = checkVerificationEmailRateLimit(
+      parsed.data.email,
+      requestHeaders,
+    );
+
+    if (!allowed) {
+      return {
+        error: "Too many verification email requests. Please wait and try again.",
+        success: null,
+      };
+    }
+
     const callbackUrl = normalizeAuthCallbackUrl(
       formData.get("callbackUrl")?.toString(),
     );
@@ -152,7 +166,7 @@ export async function sendVerificationEmailAction(
         email: parsed.data.email,
         callbackURL: callbackUrl,
       },
-      headers: await headers(),
+      headers: requestHeaders,
     });
   } catch (error) {
     processLogger.error(

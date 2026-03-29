@@ -80,6 +80,23 @@ function getRecipientName(name: string | null | undefined) {
   return "there";
 }
 
+function sanitizeErrorMessage(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "Unknown SMTP error";
+
+  return message
+    .replaceAll(
+      /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+      "[redacted-email]",
+    )
+    .replaceAll(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[redacted-ip]")
+    .replaceAll(/smtp-relay\.[^\s)]+/gi, "[redacted-smtp-host]");
+}
+
 function buildEmailLayout(input: {
   preheader: string;
   title: string;
@@ -194,7 +211,9 @@ async function sendEmail({ to, subject, html, text }: SendEmailInput) {
     });
     processLogger.info("[email] Auth email handed off to SMTP transport.");
   } catch (error) {
-    processLogger.error("[email] Failed to send auth email via SMTP.", error);
+    processLogger.error(
+      `[email] Failed to send auth email via SMTP: ${sanitizeErrorMessage(error)}`,
+    );
     throw new Error("Failed to send auth email.");
   }
 }
