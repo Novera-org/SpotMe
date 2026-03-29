@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { isEmailNotVerifiedError } from "@/lib/auth/error-messages";
 import { checkVerificationEmailRateLimit } from "@/lib/auth/verification-rate-limit";
 import {
   normalizeAuthCallbackUrl,
@@ -18,6 +19,9 @@ import {
 
 export interface AuthActionState {
   error: string | null;
+  email?: string;
+  callbackUrl?: string;
+  requiresEmailVerification?: boolean;
 }
 
 export interface VerificationEmailActionState {
@@ -39,6 +43,10 @@ export async function signInAction(
     return { error: parsed.error.issues[0].message };
   }
 
+  const callbackUrl = normalizeAuthCallbackUrl(
+    formData.get("callbackUrl")?.toString(),
+  );
+
   let session;
   try {
     session = await auth.api.signInEmail({
@@ -49,18 +57,29 @@ export async function signInAction(
       headers: await headers(),
     });
   } catch (error) {
+    if (isEmailNotVerifiedError(error)) {
+      await setVerifyState({
+        email: parsed.data.email,
+        callbackUrl,
+      });
+
+      return {
+        error: null,
+        email: parsed.data.email,
+        callbackUrl,
+        requiresEmailVerification: true,
+      };
+    }
+
     processLogger.error("[signInAction] Sign-in failed:", error);
     return { error: "Invalid email or password" };
   }
 
   const defaultRedirect = session?.user?.role === "admin" ? "/dashboard" : "/account";
-  const rawCallback = (formData.get("callbackUrl") as string) || defaultRedirect;
-  const callbackUrl =
-    rawCallback.startsWith("/") && !rawCallback.startsWith("//")
-      ? rawCallback
-      : defaultRedirect;
+  const redirectTarget =
+    callbackUrl === "/account" ? defaultRedirect : callbackUrl;
 
-  redirect(callbackUrl);
+  redirect(redirectTarget);
 }
 
 export async function signUpAction(
