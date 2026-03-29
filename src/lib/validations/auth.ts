@@ -46,6 +46,13 @@ export const changePasswordSchema = z
     }
   });
 
+export const verificationEmailRequestSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type VerificationEmailRequestInput = z.infer<
+  typeof verificationEmailRequestSchema
+>;
