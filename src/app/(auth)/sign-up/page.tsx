@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signUpAction, type AuthActionState } from "@/actions/auth";
 import PasswordInput from "@/components/shared/password-input";
@@ -9,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/account";
+  const signInHref = `/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   const [state, formAction, isPending] = useActionState<
     AuthActionState | null,
     FormData
@@ -20,6 +24,8 @@ export default function SignUpPage() {
       <p className="text-muted-foreground text-sm mb-6">Get started by setting up your profile.</p>
 
       <form action={formAction} className="auth-form">
+        <input name="callbackUrl" type="hidden" value={callbackUrl} />
+
         <div className="space-y-1.5">
           <Label htmlFor="name">
             Name
@@ -87,7 +93,7 @@ export default function SignUpPage() {
 
       <p className="auth-footer">
         Already have an account?{" "}
-        <Link href="/sign-in" className="auth-link">
+        <Link href={signInHref} className="auth-link">
           Sign In
         </Link>
       </p>

@@ -1,13 +1,38 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { signInSchema, signUpSchema } from "@/lib/validations/auth";
+import { auth } from "@/lib/auth";
+import { isAuthEmailSendingEnabled } from "@/lib/email";
 import { processLogger } from "@/lib/logger";
+import {
+  signInSchema,
+  signUpSchema,
+  verificationEmailRequestSchema,
+} from "@/lib/validations/auth";
 
 export interface AuthActionState {
   error: string | null;
+}
+
+export interface VerificationEmailActionState {
+  error: string | null;
+  success: string | null;
+}
+
+const DEFAULT_POST_VERIFY_PATH = "/account";
+
+function normalizeCallbackUrl(
+  rawValue: FormDataEntryValue | string | null | undefined,
+) {
+  const value =
+    typeof rawValue === "string" ? rawValue.trim() : rawValue?.toString().trim();
+
+  if (value && value.startsWith("/") && !value.startsWith("//")) {
+    return value;
+  }
+
+  return DEFAULT_POST_VERIFY_PATH;
 }
 
 export async function signInAction(
@@ -19,7 +44,6 @@ export async function signInAction(
     password: formData.get("password") as string,
   };
 
-  // Server-side validation with Zod
   const parsed = signInSchema.safeParse(raw);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -34,18 +58,18 @@ export async function signInAction(
       },
       headers: await headers(),
     });
-  } catch (err) {
-    processLogger.error("[signInAction] Sign-in failed:", err);
+  } catch (error) {
+    processLogger.error("[signInAction] Sign-in failed:", error);
     return { error: "Invalid email or password" };
   }
 
-  // Redirect based on role: admins → dashboard, users → account
   const defaultRedirect = session?.user?.role === "admin" ? "/dashboard" : "/account";
   const rawCallback = (formData.get("callbackUrl") as string) || defaultRedirect;
   const callbackUrl =
     rawCallback.startsWith("/") && !rawCallback.startsWith("//")
       ? rawCallback
       : defaultRedirect;
+
   redirect(callbackUrl);
 }
 
@@ -53,6 +77,13 @@ export async function signUpAction(
   _prevState: AuthActionState | null,
   formData: FormData,
 ): Promise<AuthActionState> {
+  if (!isAuthEmailSendingEnabled()) {
+    return {
+      error:
+        "Account verification email delivery is not configured. Please try again later.",
+    };
+  }
+
   const raw = {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
@@ -65,29 +96,80 @@ export async function signUpAction(
     return { error: parsed.error.issues[0].message };
   }
 
-  let session;
+  const callbackUrl = normalizeCallbackUrl(formData.get("callbackUrl"));
+
   try {
-    session = await auth.api.signUpEmail({
+    await auth.api.signUpEmail({
       body: {
         name: parsed.data.name,
         email: parsed.data.email,
         password: parsed.data.password,
+        callbackURL: callbackUrl,
       },
       headers: await headers(),
     });
-  } catch (err: unknown) {
-    processLogger.error("[signUpAction] Sign-up failed:", err);
+  } catch (error: unknown) {
+    processLogger.error("[signUpAction] Sign-up failed:", error);
 
-    // Check for unique constraint violation (email already exists)
     const message =
-      err instanceof Error && err.message?.includes("unique")
+      error instanceof Error && error.message?.includes("unique")
         ? "An account with this email already exists"
         : "Failed to create account, please try again";
     return { error: message };
   }
 
-  // Redirect based on role: admins → dashboard, users → account
-  redirect(session?.user?.role === "admin" ? "/dashboard" : "/account");
+  const verifyPageParams = new URLSearchParams({
+    email: parsed.data.email,
+    callbackUrl,
+  });
+
+  redirect(`/verify-email?${verifyPageParams.toString()}`);
+}
+
+export async function sendVerificationEmailAction(
+  _prevState: VerificationEmailActionState | null,
+  formData: FormData,
+): Promise<VerificationEmailActionState> {
+  if (!isAuthEmailSendingEnabled()) {
+    return {
+      error:
+        "Verification email delivery is not configured. Add SMTP settings before testing this flow.",
+      success: null,
+    };
+  }
+
+  const parsed = verificationEmailRequestSchema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message, success: null };
+  }
+
+  try {
+    await auth.api.sendVerificationEmail({
+      body: {
+        email: parsed.data.email,
+        callbackURL: normalizeCallbackUrl(formData.get("callbackUrl")),
+      },
+      headers: await headers(),
+    });
+  } catch (error) {
+    processLogger.error(
+      "[sendVerificationEmailAction] Failed to send verification email:",
+      error,
+    );
+    return {
+      error: "We couldn't send a verification email right now. Please try again.",
+      success: null,
+    };
+  }
+
+  return {
+    error: null,
+    success:
+      "If that email belongs to an unverified account, a fresh verification link is on the way.",
+  };
 }
 
 export async function signOutAction(): Promise<void> {
@@ -98,5 +180,6 @@ export async function signOutAction(): Promise<void> {
   } catch {
     // Ignore sign-out errors
   }
+
   redirect("/");
 }

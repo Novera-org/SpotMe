@@ -1,6 +1,9 @@
+import nodemailer from "nodemailer";
 import { processLogger } from "@/lib/logger";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME?.trim() || "SpotMe";
+let cachedTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+let cachedTransportKey: string | null = null;
 
 type SendEmailInput = {
   to: string;
@@ -25,9 +28,20 @@ function getSmtpConfig() {
   const fromName = process.env.AUTH_EMAIL_FROM_NAME?.trim() || APP_NAME;
   const fromAddress = process.env.AUTH_EMAIL_FROM_ADDRESS?.trim();
   const smtpHost = process.env.SMTP_HOST?.trim();
-  const smtpPort = process.env.SMTP_PORT?.trim();
+  const smtpPortValue = process.env.SMTP_PORT?.trim();
   const smtpUser = process.env.SMTP_USER?.trim();
   const smtpPassword = process.env.SMTP_PASSWORD?.trim();
+  const smtpSecureValue = process.env.SMTP_SECURE?.trim().toLowerCase();
+  const smtpPort = smtpPortValue ? Number.parseInt(smtpPortValue, 10) : Number.NaN;
+  const smtpPortConfigured = Number.isInteger(smtpPort) && smtpPort > 0;
+  const smtpSecure =
+    smtpSecureValue === "true"
+      ? true
+      : smtpSecureValue === "false"
+        ? false
+        : smtpPort === 465;
+  const smtpAuthConfigured =
+    (!smtpUser && !smtpPassword) || Boolean(smtpUser && smtpPassword);
 
   return {
     fromName,
@@ -36,19 +50,16 @@ function getSmtpConfig() {
     smtpPort,
     smtpUser,
     smtpPassword,
+    smtpSecure,
+    smtpAuthConfigured,
     smtpConfigured: Boolean(
-      smtpHost && smtpPort && smtpUser && smtpPassword && fromAddress,
+      smtpHost && smtpPortConfigured && fromAddress && smtpAuthConfigured,
     ),
   };
 }
 
 export function isAuthEmailSendingEnabled() {
-  /**
-   * Real SMTP transport is deferred to Plan 2.
-   * Until then, only enable the auth email callbacks in non-production,
-   * where the local preview fallback is acceptable.
-   */
-  return process.env.NODE_ENV !== "production";
+  return process.env.NODE_ENV !== "production" || getSmtpConfig().smtpConfigured;
 }
 
 function escapeHtml(value: string) {
@@ -127,15 +138,19 @@ async function sendEmail({ to, subject, html, text }: SendEmailInput) {
     fromAddress,
     smtpHost,
     smtpPort,
+    smtpUser,
+    smtpPassword,
+    smtpSecure,
+    smtpAuthConfigured,
     smtpConfigured,
   } = getSmtpConfig();
 
   if (!smtpConfigured) {
     if (process.env.NODE_ENV !== "production") {
-      processLogger.info("[email] Using development email fallback.", {
+      processLogger.info("[email] Using development email preview fallback.", {
         to,
         subject,
-        hasBody: true,
+        previewText: text,
       });
       return;
     }
@@ -143,31 +158,55 @@ async function sendEmail({ to, subject, html, text }: SendEmailInput) {
     throw new Error("Auth email delivery is not configured.");
   }
 
-  /**
-   * SMTP transport is intentionally deferred to the next auth phase.
-   * Plan 0 keeps the email layer provider-agnostic and preserves the
-   * development fallback so the rest of the auth wiring can be built safely.
-   */
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("SMTP delivery is configured but not implemented yet.");
+  if (!smtpAuthConfigured) {
+    throw new Error("SMTP auth configuration is incomplete.");
   }
 
-  processLogger.info(
-    "[email] SMTP configuration detected but live SMTP sending is not enabled yet.",
-    {
+  const transportKey = JSON.stringify({
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    smtpSecure,
+  });
+
+  if (!cachedTransporter || cachedTransportKey !== transportKey) {
+    cachedTransporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth:
+        smtpUser && smtpPassword
+          ? {
+              user: smtpUser,
+              pass: smtpPassword,
+            }
+          : undefined,
+    });
+    cachedTransportKey = transportKey;
+  }
+
+  try {
+    await cachedTransporter.sendMail({
+      from: {
+        name: fromName,
+        address: fromAddress!,
+      },
       to,
       subject,
-      from: `${fromName} <${fromAddress}>`,
+      text,
+      html,
+    });
+    processLogger.info("[email] Auth email sent via SMTP.", {
+      to,
+      subject,
       smtpHost,
       smtpPort,
-    },
-  );
-  processLogger.info("[email] Falling back to local email preview output.", {
-    to,
-    subject,
-    hasTextBody: Boolean(text),
-    hasHtmlBody: Boolean(html),
-  });
+      smtpSecure,
+    });
+  } catch (error) {
+    processLogger.error("[email] Failed to send auth email via SMTP.", error);
+    throw new Error("Failed to send auth email.");
+  }
 }
 
 export async function sendVerificationEmailMessage({

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const signUpHref = `/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   const [state, formAction, isPending] = useActionState<
     AuthActionState | null,
     FormData
@@ -63,7 +64,7 @@ export default function SignInPage() {
 
       <p className="auth-footer">
         Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="auth-link">
+        <Link href={signUpHref} className="auth-link">
           Sign Up
         </Link>
       </p>
