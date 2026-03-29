@@ -26,5 +26,26 @@ export const signUpSchema = z
     }
   });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(8, "Current password must be at least 8 characters"),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(128),
+    confirmPassword: z.string(),
+  })
+  .check((ctx) => {
+    if (ctx.value.newPassword !== ctx.value.confirmPassword) {
+      ctx.issues.push({
+        code: "custom",
+        message: "Passwords do not match",
+        input: ctx.value.confirmPassword,
+        path: ["confirmPassword"],
+      });
+    }
+  });
+
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

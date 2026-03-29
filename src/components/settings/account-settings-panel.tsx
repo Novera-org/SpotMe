@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { updateDisplayName, revokeSessionById } from "@/actions/settings";
+import {
+  changePassword,
+  revokeSessionById,
+  updateDisplayName,
+} from "@/actions/settings";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
@@ -28,18 +33,18 @@ export function AccountSettingsPanel({
   email,
   sessions,
 }: AccountSettingsPanelProps) {
+  const router = useRouter();
+  const passwordFormRef = useRef<HTMLFormElement>(null);
   const [displayName, setDisplayName] = useState(initialName);
   const [nameError, setNameError] = useState<string | null>(null);
   const [namePending, startNameTransition] = useTransition();
 
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordInfo, setPasswordInfo] = useState<string | null>(null);
   const [passwordPending, startPasswordTransition] = useTransition();
 
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [sessionPending, startSessionTransition] = useTransition();
-
 
   const handleDisplayNameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -58,16 +63,28 @@ export function AccountSettingsPanel({
     });
   };
 
-  const handlePasswordPlaceholder = (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPasswordError(null);
-    setPasswordInfo(null);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
     startPasswordTransition(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      const message = "Password change is placeholder UI for now.";
-      setPasswordInfo(message);
-      toast.info(message);
+      try {
+        await changePassword({
+          currentPassword: formData.get("currentPassword") as string,
+          newPassword: formData.get("newPassword") as string,
+          confirmPassword: formData.get("confirmPassword") as string,
+        });
+        form.reset();
+        toast.success("Password updated. Other sessions have been signed out.");
+        router.refresh();
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to update password.";
+        setPasswordError(message);
+        toast.error(message);
+      }
     });
   };
 
@@ -79,6 +96,7 @@ export function AccountSettingsPanel({
       try {
         await revokeSessionById({ sessionId });
         toast.success("Session revoked.");
+        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to revoke session.";
         setSessionError(message);
@@ -131,10 +149,14 @@ export function AccountSettingsPanel({
       <section className="border border-border bg-card p-5">
         <h2 className="text-lg font-semibold">Security</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Password change UI is available as a placeholder.
+          Change your password and sign out your other active devices in one step.
         </p>
 
-        <form className="mt-5 space-y-4 max-w-xl" onSubmit={handlePasswordPlaceholder}>
+        <form
+          ref={passwordFormRef}
+          className="mt-5 space-y-4 max-w-xl"
+          onSubmit={handlePasswordSubmit}
+        >
           <div className="space-y-1.5">
             <Label htmlFor="currentPassword">Current password</Label>
             <PasswordInput
@@ -165,12 +187,6 @@ export function AccountSettingsPanel({
           {passwordError && (
             <p className="text-sm text-destructive" role="alert">
               {passwordError}
-            </p>
-          )}
-
-          {passwordInfo && (
-            <p className="text-sm text-muted-foreground" role="status">
-              {passwordInfo}
             </p>
           )}
 

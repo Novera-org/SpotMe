@@ -1,8 +1,18 @@
 "use server";
 
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { albums, albumSettings, images, session, user } from "@/lib/db/schema";
+import { auth } from "@/lib/auth";
+import {
+  getErrorMessage,
+  isCredentialAccountNotFoundError,
+  isInvalidPasswordError,
+  isPasswordTooLongError,
+  isPasswordTooShortError,
+} from "@/lib/auth/error-messages";
 import { requireAdmin } from "@/lib/auth/helpers";
+import { changePasswordSchema } from "@/lib/validations/auth";
 import { processLogger } from "@/lib/logger";
 import { getConfiguredR2ImageHostname } from "@/lib/storage/r2-public-host";
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -108,6 +118,58 @@ export async function updateDisplayName(input: { name: string }) {
       updatedAt: new Date(),
     })
     .where(eq(user.id, userId));
+
+  revalidatePath("/settings/account");
+  return { ok: true };
+}
+
+export async function changePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  await requireAdmin();
+
+  const parsed = changePasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0].message);
+  }
+
+  try {
+    await auth.api.changePassword({
+      body: {
+        currentPassword: parsed.data.currentPassword,
+        newPassword: parsed.data.newPassword,
+        revokeOtherSessions: true,
+      },
+      headers: await headers(),
+    });
+  } catch (error) {
+    processLogger.error("[changePassword] Failed:", error);
+
+    if (isInvalidPasswordError(error)) {
+      throw new Error("Your current password is incorrect.");
+    }
+
+    if (isCredentialAccountNotFoundError(error)) {
+      throw new Error("This account does not have a password sign-in enabled.");
+    }
+
+    if (isPasswordTooShortError(error)) {
+      throw new Error("Password must be at least 8 characters.");
+    }
+
+    if (isPasswordTooLongError(error)) {
+      throw new Error("Password must be at most 128 characters.");
+    }
+
+    const message = getErrorMessage(error).toLowerCase();
+    if (message.includes("session") || message.includes("unauthorized")) {
+      throw new Error("Your session expired. Sign in again and retry the password change.");
+    }
+
+    throw new Error("Unable to change your password right now.");
+  }
 
   revalidatePath("/settings/account");
   return { ok: true };
