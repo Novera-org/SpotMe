@@ -3,16 +3,22 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { isEmailNotVerifiedError } from "@/lib/auth/error-messages";
+import {
+  isEmailNotVerifiedError,
+  isInvalidTokenError,
+  isTokenExpiredError,
+} from "@/lib/auth/error-messages";
+import { getResetPasswordTokenStatus } from "@/lib/auth/reset-password";
 import { checkVerificationEmailRateLimit } from "@/lib/auth/verification-rate-limit";
 import {
   normalizeAuthCallbackUrl,
   setVerifyState,
 } from "@/lib/auth/verify-state";
-import { isAuthEmailSendingEnabled } from "@/lib/email";
+import { isAuthEmailSendingEnabled, sanitizeErrorMessage } from "@/lib/email";
 import { processLogger } from "@/lib/logger";
 import {
   forgotPasswordRequestSchema,
+  resetPasswordSchema,
   signInSchema,
   signUpSchema,
   verificationEmailRequestSchema,
@@ -35,6 +41,11 @@ export interface ForgotPasswordActionState {
   success: string | null;
 }
 
+export interface ResetPasswordActionState {
+  error: string | null;
+  tokenStatus?: "expired" | "invalid";
+}
+
 const RESET_PASSWORD_PATH = "/reset-password";
 
 function buildResetPasswordRedirect(callbackUrl: string) {
@@ -43,6 +54,18 @@ function buildResetPasswordRedirect(callbackUrl: string) {
   });
 
   return `${RESET_PASSWORD_PATH}?${params.toString()}`;
+}
+
+function buildSignInRedirect(callbackUrl: string, resetStatus?: "success") {
+  const params = new URLSearchParams({
+    callbackUrl,
+  });
+
+  if (resetStatus) {
+    params.set("reset", resetStatus);
+  }
+
+  return `/sign-in?${params.toString()}`;
 }
 
 export async function signInAction(
@@ -276,6 +299,79 @@ export async function requestPasswordResetAction(
     success:
       "If an account with that email exists, a password reset link is on the way.",
   };
+}
+
+export async function resetPasswordAction(
+  _prevState: ResetPasswordActionState | null,
+  formData: FormData,
+): Promise<ResetPasswordActionState> {
+  const token = formData.get("token")?.toString().trim() ?? "";
+  const callbackUrl = normalizeAuthCallbackUrl(
+    formData.get("callbackUrl")?.toString(),
+  );
+
+  if (!token) {
+    return {
+      error: "This password reset link is no longer valid.",
+      tokenStatus: "invalid",
+    };
+  }
+
+  const parsed = resetPasswordSchema.safeParse({
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  try {
+    await auth.api.resetPassword({
+      body: {
+        token,
+        newPassword: parsed.data.newPassword,
+      },
+      headers: await headers(),
+    });
+  } catch (error) {
+    if (isTokenExpiredError(error)) {
+      return {
+        error: "This password reset link has expired. Request a new one and try again.",
+        tokenStatus: "expired",
+      };
+    }
+
+    if (isInvalidTokenError(error)) {
+      let tokenStatus: "expired" | "invalid" = "invalid";
+
+      try {
+        const resolvedStatus = await getResetPasswordTokenStatus(token);
+        tokenStatus = resolvedStatus === "expired" ? "expired" : "invalid";
+      } catch (statusError) {
+        processLogger.error(
+          `[resetPasswordAction] Failed to inspect reset token status: ${sanitizeErrorMessage(statusError)}`,
+        );
+      }
+
+      return {
+        error:
+          tokenStatus === "expired"
+            ? "This password reset link has expired. Request a new one and try again."
+            : "This password reset link is no longer valid.",
+        tokenStatus: tokenStatus === "expired" ? "expired" : "invalid",
+      };
+    }
+
+    processLogger.error(
+      `[resetPasswordAction] Failed to reset password: ${sanitizeErrorMessage(error)}`,
+    );
+    return {
+      error: "We couldn't reset your password right now. Please try again.",
+    };
+  }
+
+  redirect(buildSignInRedirect(callbackUrl, "success"));
 }
 
 export async function signOutAction(): Promise<void> {
