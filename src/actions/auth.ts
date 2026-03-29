@@ -12,6 +12,7 @@ import {
 import { isAuthEmailSendingEnabled } from "@/lib/email";
 import { processLogger } from "@/lib/logger";
 import {
+  forgotPasswordRequestSchema,
   signInSchema,
   signUpSchema,
   verificationEmailRequestSchema,
@@ -27,6 +28,21 @@ export interface AuthActionState {
 export interface VerificationEmailActionState {
   error: string | null;
   success: string | null;
+}
+
+export interface ForgotPasswordActionState {
+  error: string | null;
+  success: string | null;
+}
+
+const RESET_PASSWORD_PATH = "/reset-password";
+
+function buildResetPasswordRedirect(callbackUrl: string) {
+  const params = new URLSearchParams({
+    callbackUrl,
+  });
+
+  return `${RESET_PASSWORD_PATH}?${params.toString()}`;
 }
 
 export async function signInAction(
@@ -209,6 +225,56 @@ export async function sendVerificationEmailAction(
     error: null,
     success:
       "If that email belongs to an unverified account, a fresh verification link is on the way.",
+  };
+}
+
+export async function requestPasswordResetAction(
+  _prevState: ForgotPasswordActionState | null,
+  formData: FormData,
+): Promise<ForgotPasswordActionState> {
+  if (!isAuthEmailSendingEnabled()) {
+    return {
+      error:
+        "Password reset email delivery is not configured. Add SMTP settings before testing this flow.",
+      success: null,
+    };
+  }
+
+  const parsed = forgotPasswordRequestSchema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message, success: null };
+  }
+
+  const callbackUrl = normalizeAuthCallbackUrl(
+    formData.get("callbackUrl")?.toString(),
+  );
+
+  try {
+    await auth.api.requestPasswordReset({
+      body: {
+        email: parsed.data.email,
+        redirectTo: buildResetPasswordRedirect(callbackUrl),
+      },
+      headers: await headers(),
+    });
+  } catch (error) {
+    processLogger.error(
+      "[requestPasswordResetAction] Failed to request password reset:",
+      error,
+    );
+    return {
+      error: "We couldn't send a password reset email right now. Please try again.",
+      success: null,
+    };
+  }
+
+  return {
+    error: null,
+    success:
+      "If an account with that email exists, a password reset link is on the way.",
   };
 }
 

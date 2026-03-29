@@ -14,6 +14,7 @@ export default function SignInPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/account";
   const signUpHref = `/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  const forgotPasswordHref = `/forgot-password?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   const [state, formAction, isPending] = useActionState<
     AuthActionState | null,
     FormData
@@ -48,7 +49,12 @@ export default function SignInPage() {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="password">Password</Label>
+            <Link href={forgotPasswordHref} className="text-sm auth-link">
+              Forgot password?
+            </Link>
+          </div>
           <PasswordInput
             id="password"
             name="password"
