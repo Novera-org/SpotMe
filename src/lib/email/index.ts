@@ -1,6 +1,5 @@
 import { processLogger } from "@/lib/logger";
 
-const RESEND_API_URL = "https://api.resend.com/emails";
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME?.trim() || "SpotMe";
 
 type SendEmailInput = {
@@ -93,11 +92,17 @@ ${input.footer}`;
 }
 
 async function sendEmail({ to, subject, html, text }: SendEmailInput) {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
   const fromName = process.env.AUTH_EMAIL_FROM_NAME?.trim() || APP_NAME;
   const fromAddress = process.env.AUTH_EMAIL_FROM_ADDRESS?.trim();
+  const smtpHost = process.env.SMTP_HOST?.trim();
+  const smtpPort = process.env.SMTP_PORT?.trim();
+  const smtpUser = process.env.SMTP_USER?.trim();
+  const smtpPassword = process.env.SMTP_PASSWORD?.trim();
+  const smtpConfigured = Boolean(
+    smtpHost && smtpPort && smtpUser && smtpPassword && fromAddress,
+  );
 
-  if (!apiKey || !fromAddress) {
+  if (!smtpConfigured) {
     if (process.env.NODE_ENV !== "production") {
       processLogger.info("[email] Using development email fallback.", {
         to,
@@ -110,31 +115,31 @@ async function sendEmail({ to, subject, html, text }: SendEmailInput) {
     throw new Error("Auth email delivery is not configured.");
   }
 
-  const response = await fetch(RESEND_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: `${fromName} <${fromAddress}>`,
-      to: [to],
-      subject,
-      html,
-      text,
-    }),
-  });
+  /**
+   * SMTP transport is intentionally deferred to the next auth phase.
+   * Plan 0 keeps the email layer provider-agnostic and preserves the
+   * development fallback so the rest of the auth wiring can be built safely.
+   */
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SMTP delivery is configured but not implemented yet.");
+  }
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    processLogger.error("[email] Failed to send email through Resend.", {
+  processLogger.info(
+    "[email] SMTP configuration detected but live SMTP sending is not enabled yet.",
+    {
       to,
       subject,
-      status: response.status,
-      errorBody,
-    });
-    throw new Error("Failed to send email.");
-  }
+      from: `${fromName} <${fromAddress}>`,
+      smtpHost,
+      smtpPort,
+    },
+  );
+  processLogger.info("[email] Falling back to local email preview output.", {
+    to,
+    subject,
+    text,
+    html,
+  });
 }
 
 export async function sendVerificationEmailMessage({
