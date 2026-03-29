@@ -80,7 +80,7 @@ function getRecipientName(name: string | null | undefined) {
   return "there";
 }
 
-function sanitizeErrorMessage(error: unknown) {
+export function sanitizeErrorMessage(error: unknown) {
   const message =
     error instanceof Error
       ? error.message

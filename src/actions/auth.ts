@@ -14,7 +14,7 @@ import {
   normalizeAuthCallbackUrl,
   setVerifyState,
 } from "@/lib/auth/verify-state";
-import { isAuthEmailSendingEnabled } from "@/lib/email";
+import { isAuthEmailSendingEnabled, sanitizeErrorMessage } from "@/lib/email";
 import { processLogger } from "@/lib/logger";
 import {
   forgotPasswordRequestSchema,
@@ -354,7 +354,9 @@ export async function resetPasswordAction(
       };
     }
 
-    processLogger.error("[resetPasswordAction] Failed to reset password:", error);
+    processLogger.error(
+      `[resetPasswordAction] Failed to reset password: ${sanitizeErrorMessage(error)}`,
+    );
     return {
       error: "We couldn't reset your password right now. Please try again.",
     };

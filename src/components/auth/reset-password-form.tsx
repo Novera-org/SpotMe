@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import {
   resetPasswordAction,
   type ResetPasswordActionState,
 } from "@/actions/auth";
+import { ResetLinkStatusCard } from "@/components/auth/reset-link-status-card";
 import PasswordInput from "@/components/shared/password-input";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Label } from "@/components/ui/label";
@@ -28,39 +28,19 @@ export function ResetPasswordForm({
 
   if (state?.tokenStatus === "expired") {
     return (
-      <>
-        <h1 className="mb-1 text-2xl font-bold tracking-tight text-foreground font-serif">
-          Reset link expired
-        </h1>
-        <p className="mb-6 text-sm text-muted-foreground">
-          That password reset link has expired. Request a fresh one to keep going.
-        </p>
-        <Link
-          href={forgotPasswordHref}
-          className="inline-flex w-full items-center justify-center border border-border px-4 py-2 font-semibold"
-        >
-          Request a new reset link
-        </Link>
-      </>
+      <ResetLinkStatusCard
+        tokenStatus="expired"
+        forgotPasswordHref={forgotPasswordHref}
+      />
     );
   }
 
   if (state?.tokenStatus === "invalid") {
     return (
-      <>
-        <h1 className="mb-1 text-2xl font-bold tracking-tight text-foreground font-serif">
-          Reset link invalid
-        </h1>
-        <p className="mb-6 text-sm text-muted-foreground">
-          That password reset link could not be used. Request a fresh one to try again.
-        </p>
-        <Link
-          href={forgotPasswordHref}
-          className="inline-flex w-full items-center justify-center border border-border px-4 py-2 font-semibold"
-        >
-          Request a new reset link
-        </Link>
-      </>
+      <ResetLinkStatusCard
+        tokenStatus="invalid"
+        forgotPasswordHref={forgotPasswordHref}
+      />
     );
   }
 
