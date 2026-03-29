@@ -343,7 +343,16 @@ export async function resetPasswordAction(
     }
 
     if (isInvalidTokenError(error)) {
-      const tokenStatus = await getResetPasswordTokenStatus(token);
+      let tokenStatus: "expired" | "invalid" = "invalid";
+
+      try {
+        const resolvedStatus = await getResetPasswordTokenStatus(token);
+        tokenStatus = resolvedStatus === "expired" ? "expired" : "invalid";
+      } catch (statusError) {
+        processLogger.error(
+          `[resetPasswordAction] Failed to inspect reset token status: ${sanitizeErrorMessage(statusError)}`,
+        );
+      }
 
       return {
         error:
