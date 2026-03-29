@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import {
+  isAuthEmailSendingEnabled,
   sendResetPasswordEmailMessage,
   sendVerificationEmailMessage,
 } from "@/lib/email";
@@ -12,6 +13,7 @@ const AUTH_BASE_URL =
   process.env.BETTER_AUTH_URL?.trim() ||
   process.env.NEXT_PUBLIC_APP_URL?.trim() ||
   "http://localhost:3000";
+const AUTH_EMAIL_SENDING_ENABLED = isAuthEmailSendingEnabled();
 
 export const auth = betterAuth({
   baseURL: AUTH_BASE_URL,
@@ -31,26 +33,34 @@ export const auth = betterAuth({
     requireEmailVerification: false,
     resetPasswordTokenExpiresIn: 60 * 60,
     revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendResetPasswordEmailMessage({
-        to: user.email,
-        name: user.name,
-        url,
-      });
-    },
+    ...(AUTH_EMAIL_SENDING_ENABLED
+      ? {
+          sendResetPassword: async ({ user, url }: { user: { email: string; name?: string | null }; url: string }) => {
+            await sendResetPasswordEmailMessage({
+              to: user.email,
+              name: user.name,
+              url,
+            });
+          },
+        }
+      : {}),
   },
   emailVerification: {
     expiresIn: 60 * 60 * 24,
     sendOnSignUp: false,
     sendOnSignIn: false,
     autoSignInAfterVerification: false,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendVerificationEmailMessage({
-        to: user.email,
-        name: user.name,
-        url,
-      });
-    },
+    ...(AUTH_EMAIL_SENDING_ENABLED
+      ? {
+          sendVerificationEmail: async ({ user, url }: { user: { email: string; name?: string | null }; url: string }) => {
+            await sendVerificationEmailMessage({
+              to: user.email,
+              name: user.name,
+              url,
+            });
+          },
+        }
+      : {}),
   },
   user: {
     additionalFields: {

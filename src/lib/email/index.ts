@@ -21,6 +21,36 @@ type ResetPasswordEmailInput = {
   url: string;
 };
 
+function getSmtpConfig() {
+  const fromName = process.env.AUTH_EMAIL_FROM_NAME?.trim() || APP_NAME;
+  const fromAddress = process.env.AUTH_EMAIL_FROM_ADDRESS?.trim();
+  const smtpHost = process.env.SMTP_HOST?.trim();
+  const smtpPort = process.env.SMTP_PORT?.trim();
+  const smtpUser = process.env.SMTP_USER?.trim();
+  const smtpPassword = process.env.SMTP_PASSWORD?.trim();
+
+  return {
+    fromName,
+    fromAddress,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    smtpPassword,
+    smtpConfigured: Boolean(
+      smtpHost && smtpPort && smtpUser && smtpPassword && fromAddress,
+    ),
+  };
+}
+
+export function isAuthEmailSendingEnabled() {
+  /**
+   * Real SMTP transport is deferred to Plan 2.
+   * Until then, only enable the auth email callbacks in non-production,
+   * where the local preview fallback is acceptable.
+   */
+  return process.env.NODE_ENV !== "production";
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -92,22 +122,20 @@ ${input.footer}`;
 }
 
 async function sendEmail({ to, subject, html, text }: SendEmailInput) {
-  const fromName = process.env.AUTH_EMAIL_FROM_NAME?.trim() || APP_NAME;
-  const fromAddress = process.env.AUTH_EMAIL_FROM_ADDRESS?.trim();
-  const smtpHost = process.env.SMTP_HOST?.trim();
-  const smtpPort = process.env.SMTP_PORT?.trim();
-  const smtpUser = process.env.SMTP_USER?.trim();
-  const smtpPassword = process.env.SMTP_PASSWORD?.trim();
-  const smtpConfigured = Boolean(
-    smtpHost && smtpPort && smtpUser && smtpPassword && fromAddress,
-  );
+  const {
+    fromName,
+    fromAddress,
+    smtpHost,
+    smtpPort,
+    smtpConfigured,
+  } = getSmtpConfig();
 
   if (!smtpConfigured) {
     if (process.env.NODE_ENV !== "production") {
       processLogger.info("[email] Using development email fallback.", {
         to,
         subject,
-        text,
+        hasBody: true,
       });
       return;
     }
@@ -137,8 +165,8 @@ async function sendEmail({ to, subject, html, text }: SendEmailInput) {
   processLogger.info("[email] Falling back to local email preview output.", {
     to,
     subject,
-    text,
-    html,
+    hasTextBody: Boolean(text),
+    hasHtmlBody: Boolean(html),
   });
 }
 
