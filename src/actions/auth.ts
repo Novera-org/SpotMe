@@ -58,10 +58,17 @@ export async function signInAction(
     });
   } catch (error) {
     if (isEmailNotVerifiedError(error)) {
-      await setVerifyState({
-        email: parsed.data.email,
-        callbackUrl,
-      });
+      try {
+        await setVerifyState({
+          email: parsed.data.email,
+          callbackUrl,
+        });
+      } catch (persistError) {
+        processLogger.error(
+          "[signInAction] Failed to persist verification state:",
+          persistError,
+        );
+      }
 
       return {
         error: null,
