@@ -9,9 +9,9 @@ import {
   matchResults,
   images,
   albums,
-  albumSettings,
+  faces,
 } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { requireIdentity } from "@/lib/auth/identity";
 import { generatePresignedUploadUrl } from "@/lib/storage/upload";
 import { getAIService } from "@/lib/ai";
@@ -19,8 +19,9 @@ import {
   startSearchSchema,
   uploadSelfieSchema,
 } from "@/lib/validations/search";
-import { SEARCH_STATUS } from "@/config/constants";
+import { IMAGE_STATUS, SEARCH_STATUS } from "@/config/constants";
 import { logActivity } from "@/lib/activity";
+import { indexAlbumImages } from "@/lib/ai/indexing";
 
 // ─── Start Search Session ────────────────────────────────────────
 
@@ -143,11 +144,59 @@ export async function runMatching(searchSessionId: string) {
 
     const aiService = getAIService();
 
+    const readyAlbumImages = await db
+      .select({
+        id: images.id,
+        r2Url: images.r2Url,
+      })
+      .from(images)
+      .where(
+        and(
+          eq(images.albumId, session.albumId),
+          eq(images.status, IMAGE_STATUS.READY),
+        ),
+      );
+
+    if (readyAlbumImages.length === 0) {
+      await db
+        .update(searchSessions)
+        .set({
+          status: SEARCH_STATUS.COMPLETED,
+          completedAt: new Date(),
+        })
+        .where(eq(searchSessions.id, searchSessionId));
+
+      return { matchCount: 0, sessionId: searchSessionId };
+    }
+
+    const existingAlbumFaces = await db
+      .select({
+        imageId: faces.imageId,
+      })
+      .from(faces)
+      .where(inArray(faces.imageId, readyAlbumImages.map((image) => image.id)));
+
+    const indexedImageIds = new Set(
+      existingAlbumFaces.map((face) => face.imageId),
+    );
+    const unindexedImages = readyAlbumImages.filter(
+      (image) => !indexedImageIds.has(image.id),
+    );
+
+    if (unindexedImages.length > 0) {
+      await indexAlbumImages(
+        session.albumId,
+        unindexedImages.map((image) => ({
+          imageId: image.id,
+          imageUrl: image.r2Url,
+        })),
+      );
+    }
+
     // Run matching for each selfie
     const allMatches: Array<{
       searchSelfieId: string;
       imageId: string;
-      faceId: string;
       similarityScore: number;
     }> = [];
 
@@ -161,7 +210,6 @@ export async function runMatching(searchSessionId: string) {
         allMatches.push({
           searchSelfieId: selfie.id,
           imageId: result.imageId,
-          faceId: result.faceId,
           similarityScore: result.similarityScore,
         });
       }
@@ -179,12 +227,48 @@ export async function runMatching(searchSessionId: string) {
     // Insert match results
     const matchValues = Array.from(bestMatches.values());
     if (matchValues.length > 0) {
+      const existingFaces = await db
+        .select({
+          id: faces.id,
+          imageId: faces.imageId,
+        })
+        .from(faces)
+        .where(inArray(faces.imageId, matchValues.map((match) => match.imageId)));
+
+      const faceIdsByImageId = new Map<string, string>();
+      for (const face of existingFaces) {
+        if (!faceIdsByImageId.has(face.imageId)) {
+          faceIdsByImageId.set(face.imageId, face.id);
+        }
+      }
+
+      const missingFaceRows = matchValues
+        .filter((match) => !faceIdsByImageId.has(match.imageId))
+        .map((match) => ({
+          imageId: match.imageId,
+          bbox: { x: 0, y: 0, width: 0, height: 0 },
+          confidence: match.similarityScore,
+        }));
+
+      if (missingFaceRows.length > 0) {
+        const insertedFaces = await db
+          .insert(faces)
+          .values(missingFaceRows)
+          .returning({ id: faces.id, imageId: faces.imageId });
+
+        for (const face of insertedFaces) {
+          if (!faceIdsByImageId.has(face.imageId)) {
+            faceIdsByImageId.set(face.imageId, face.id);
+          }
+        }
+      }
+
       for (const match of matchValues) {
         await db.insert(matchResults).values({
           searchSessionId,
           searchSelfieId: match.searchSelfieId,
           imageId: match.imageId,
-          faceId: match.faceId,
+          faceId: faceIdsByImageId.get(match.imageId)!,
           similarityScore: match.similarityScore,
         });
       }
@@ -216,7 +300,12 @@ export async function runMatching(searchSessionId: string) {
       .update(searchSessions)
       .set({ status: SEARCH_STATUS.FAILED })
       .where(eq(searchSessions.id, searchSessionId));
-    return { error: "Matching failed. Please try again." };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Matching failed. Please try again.",
+    };
   }
 }
 
