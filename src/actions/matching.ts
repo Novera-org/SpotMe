@@ -252,15 +252,24 @@ export async function runMatching(searchSessionId: string) {
         }));
 
       if (missingFaceRows.length > 0) {
-        const insertedFaces = await db
+        await db
           .insert(faces)
           .values(missingFaceRows)
-          .returning({ id: faces.id, imageId: faces.imageId });
+          .onConflictDoNothing({ target: faces.imageId });
 
-        for (const face of insertedFaces) {
-          if (!faceIdsByImageId.has(face.imageId)) {
-            faceIdsByImageId.set(face.imageId, face.id);
-          }
+        // Re-query ALL faces for the current match set to ensure faceIdsByImageId
+        // is complete, covering rows that existed before AND those just inserted
+        // (or inserted by a concurrent run).
+        const allRelevantFaces = await db
+          .select({
+            id: faces.id,
+            imageId: faces.imageId,
+          })
+          .from(faces)
+          .where(inArray(faces.imageId, matchValues.map((match) => match.imageId)));
+
+        for (const face of allRelevantFaces) {
+          faceIdsByImageId.set(face.imageId, face.id);
         }
       }
 

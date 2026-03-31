@@ -40,6 +40,7 @@ export const faces = pgTable("faces", {
   id: uuid("id").primaryKey().defaultRandom(),
   imageId: uuid("image_id")
     .notNull()
+    .unique()
     .references(() => images.id, { onDelete: "cascade" }),
   bbox: jsonb("bbox").notNull(),
   confidence: real("confidence").notNull(),
