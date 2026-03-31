@@ -279,7 +279,9 @@ export async function runMatching(searchSessionId: string) {
         }
       }
 
-      const resolvedMatches: Array<(typeof matchValues)[number] & { faceId: string }> = [];
+      const resolvedMatches: Array<
+        (typeof matchValues)[number] & { faceId: string }
+      > = [];
       const unresolvedImageIds: string[] = [];
       for (const match of matchValues) {
         const faceId = faceIdsByImageId.get(match.imageId);
@@ -299,15 +301,15 @@ export async function runMatching(searchSessionId: string) {
         throw new Error("Missing face mapping for one or more matched images.");
       }
 
-      for (const match of resolvedMatches) {
-        await db.insert(matchResults).values({
+      await db.insert(matchResults).values(
+        resolvedMatches.map((match) => ({
           searchSessionId,
           searchSelfieId: match.searchSelfieId,
           imageId: match.imageId,
           faceId: match.faceId,
           similarityScore: match.similarityScore,
-        });
-      }
+        })),
+      );
     }
 
     // Update status to completed
@@ -332,10 +334,25 @@ export async function runMatching(searchSessionId: string) {
 
     return { matchCount: matchValues.length, sessionId: searchSessionId };
   } catch (error) {
-    await db
-      .update(searchSessions)
-      .set({ status: SEARCH_STATUS.FAILED })
-      .where(eq(searchSessions.id, searchSessionId));
+    try {
+      await db
+        .update(searchSessions)
+        .set({ status: SEARCH_STATUS.FAILED })
+        .where(eq(searchSessions.id, searchSessionId));
+    } catch (statusUpdateError) {
+      processLogger.error("[runMatching] Failed to update session status", {
+        searchSessionId,
+        albumId: session.albumId,
+        error:
+          statusUpdateError instanceof Error
+            ? {
+                name: statusUpdateError.name,
+                message: statusUpdateError.message,
+                stack: statusUpdateError.stack,
+              }
+            : { name: "UnknownError", message: String(statusUpdateError) },
+      });
+    }
 
     processLogger.error("[runMatching] Matching failed", {
       searchSessionId,
