@@ -17,7 +17,7 @@ export function AlbumVisibilityBadge({ visibility }: AlbumVisibilityBadgeProps) 
       className={
         normalized === "public"
           ? "capitalize gap-1.5 bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
-          : "capitalize gap-1.5 bg-slate-500/15 text-slate-300 border-slate-500/30"
+          : "capitalize gap-1.5 bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30"
       }
     >
       <Icon className="h-3.5 w-3.5" />

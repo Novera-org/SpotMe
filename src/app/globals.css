@@ -5,34 +5,92 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Restoring the original dark theme as the default */
-  --background: oklch(0 0 0); /* Pure Black */
-  --foreground: oklch(1 0 0); /* Pure White */
+  /* Light Theme */
+  --background: oklch(0.98 0 0); /* Off white */
+  --foreground: oklch(0.12 0 0); /* Soft black */
 
-  --card: oklch(0 0 0);
-  --card-foreground: oklch(1 0 0);
+  --card: oklch(1 0 0); /* Pure white */
+  --card-foreground: oklch(0.12 0 0);
 
-  --popover: oklch(0 0 0);
-  --popover-foreground: oklch(1 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.12 0 0);
 
-  --primary: oklch(1 0 0); /* White */
-  --primary-foreground: oklch(0 0 0); /* Black */
+  --primary: oklch(0.12 0 0); /* Soft black */
+  --primary-foreground: oklch(1 0 0); /* White */
 
-  --secondary: oklch(0.2 0 0);
-  --secondary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.94 0 0);
+  --secondary-foreground: oklch(0.12 0 0);
 
-  --muted: oklch(0.15 0 0);
-  --muted-foreground: oklch(0.7 0 0); /* Good contrast */
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.45 0 0); /* Good contrast */
 
-  --accent: oklch(0.2 0 0);
-  --accent-foreground: oklch(1 0 0);
+  --accent: oklch(0.94 0 0);
+  --accent-foreground: oklch(0.12 0 0);
 
   --destructive: oklch(0.6 0.25 29);
   --error: oklch(0.6 0.25 29);
 
-  --border: oklch(1 0 0); /* White borders for brutalism */
-  --input: oklch(1 0 0);
-  --ring: oklch(1 0 0);
+  --border: oklch(0.85 0 0);
+  --input: oklch(0.85 0 0);
+  --ring: oklch(0.12 0 0);
+
+  /* Badge colors - Tweaked for contrast on slate */
+  --badge-draft-bg: color-mix(in srgb, #fde047 25%, transparent);
+  --badge-draft-fg: #854d0e;
+  --badge-active-bg: color-mix(in srgb, #6ee7b7 25%, transparent);
+  --badge-active-fg: #065f46;
+  --badge-archived-bg: color-mix(in srgb, #d1d5db 25%, transparent);
+  --badge-archived-fg: #374151;
+  --badge-unknown-bg: color-mix(in srgb, #e5e7eb 25%, transparent);
+  --badge-unknown-fg: #1f2937;
+
+  --radius: 0rem;
+
+  --chart-1: oklch(0.6 0.1 251.813);
+  --chart-2: oklch(0.5 0.2 259.815);
+  --chart-3: oklch(0.4 0.2 262.881);
+  --chart-4: oklch(0.3 0.2 264.376);
+  --chart-5: oklch(0.2 0.2 265.638);
+
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+.dark {
+  /* Restoring the original dark theme but slightly softened */
+  --background: oklch(0.12 0 0); /* Soften dark mode slightly from 0 0 0 */
+  --foreground: oklch(0.98 0 0); /* Slightly off white */
+
+  --card: oklch(0.1 0 0);
+  --card-foreground: oklch(0.98 0 0);
+
+  --popover: oklch(0.1 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+
+  --primary: oklch(0.98 0 0); /* Whiteish */
+  --primary-foreground: oklch(0.12 0 0); /* Dark */
+
+  --secondary: oklch(0.2 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.7 0 0); /* Good contrast */
+
+  --accent: oklch(0.2 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+
+  --destructive: oklch(0.6 0.25 29);
+  --error: oklch(0.6 0.25 29);
+
+  --border: oklch(0.25 0 0); /* Subtle border */
+  --input: oklch(0.25 0 0);
+  --ring: oklch(0.98 0 0);
 
   /* Badge colors - Tweaked for contrast on slate */
   --badge-draft-bg: color-mix(in srgb, #fde047 25%, transparent);
@@ -44,22 +102,11 @@
   --badge-unknown-bg: color-mix(in srgb, #e5e7eb 25%, transparent);
   --badge-unknown-fg: #ffffff;
 
-  --radius: 0rem;
-
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-
-  --sidebar: var(--card);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
 }
 
 @theme inline {

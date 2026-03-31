@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "@/lib/auth/helpers";
 import { AdminHeader } from "@/components/shared/admin-header";
 import SignOutButton from "@/components/shared/sign-out-button";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { SettingsNav, SettingsTabs } from "@/components/settings/settings-nav";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -26,7 +27,14 @@ export default async function SettingsLayout({
       <AdminHeader
         userLabel={userLabel}
         actions={
-          <SignOutButton />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <SignOutButton
+              variant="ghost"
+              size="sm"
+              className="h-auto border-0 bg-transparent p-0 text-sm font-normal normal-case tracking-normal text-muted-foreground hover:bg-transparent hover:text-destructive active:translate-y-0"
+            />
+          </div>
         }
       />
 

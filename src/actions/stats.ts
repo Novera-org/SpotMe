@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, sql, desc, inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/helpers";
+import { IMAGE_STATUS } from "@/config/constants";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ interface AlbumStat {
   matchCount: number;
   downloadCount: number;
   createdAt: Date;
+  previewImages: string[];
 }
 
 interface RecentActivity {
@@ -62,6 +64,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         columns: {
           requireLogin: true,
         },
+      },
+      images: {
+        where: eq(images.status, IMAGE_STATUS.READY),
+        columns: {
+          r2Url: true,
+        },
+        limit: 2,
+        orderBy: [desc(images.createdAt)],
       },
     },
     orderBy: [desc(albums.createdAt)],
@@ -142,6 +152,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     matchCount: matchMap.get(album.id) ?? 0,
     downloadCount: downloadMap.get(album.id) ?? 0,
     createdAt: album.createdAt,
+    previewImages: album.images.map((img) => img.r2Url),
   }));
 
   // Aggregate totals
