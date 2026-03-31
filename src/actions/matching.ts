@@ -21,7 +21,8 @@ import {
 } from "@/lib/validations/search";
 import { IMAGE_STATUS, SEARCH_STATUS } from "@/config/constants";
 import { logActivity } from "@/lib/activity";
-import { indexAlbumImages } from "@/lib/ai/indexing";
+import { indexAlbumImages, PLACEHOLDER_BBOX } from "@/lib/ai/indexing";
+import { processLogger } from "@/lib/logger";
 
 // ─── Start Search Session ────────────────────────────────────────
 
@@ -246,7 +247,7 @@ export async function runMatching(searchSessionId: string) {
         .filter((match) => !faceIdsByImageId.has(match.imageId))
         .map((match) => ({
           imageId: match.imageId,
-          bbox: { x: 0, y: 0, width: 0, height: 0 },
+          bbox: PLACEHOLDER_BBOX,
           confidence: match.similarityScore,
         }));
 
@@ -263,12 +264,32 @@ export async function runMatching(searchSessionId: string) {
         }
       }
 
+      const resolvedMatches: Array<(typeof matchValues)[number] & { faceId: string }> = [];
+      const unresolvedImageIds: string[] = [];
       for (const match of matchValues) {
+        const faceId = faceIdsByImageId.get(match.imageId);
+        if (!faceId) {
+          unresolvedImageIds.push(match.imageId);
+          continue;
+        }
+        resolvedMatches.push({ ...match, faceId });
+      }
+
+      if (unresolvedImageIds.length > 0) {
+        processLogger.error("[runMatching] Missing face mapping for match images", {
+          searchSessionId,
+          albumId: session.albumId,
+          unresolvedImageIds,
+        });
+        throw new Error("Missing face mapping for one or more matched images.");
+      }
+
+      for (const match of resolvedMatches) {
         await db.insert(matchResults).values({
           searchSessionId,
           searchSelfieId: match.searchSelfieId,
           imageId: match.imageId,
-          faceId: faceIdsByImageId.get(match.imageId)!,
+          faceId: match.faceId,
           similarityScore: match.similarityScore,
         });
       }

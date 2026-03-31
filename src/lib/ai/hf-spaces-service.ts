@@ -6,8 +6,12 @@ import type {
   FaceMatchResult,
 } from "./types";
 
-const DEFAULT_AI_SERVICE_URL = "https://dalychebbi-spotme.hf.space";
-const REQUEST_TIMEOUT_MS = 120_000;
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL;
+const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
+const IMAGE_CONVERSION_CHUNK_SIZE = parsePositiveNumber(
+  process.env.AI_IMAGE_FETCH_CHUNK_SIZE,
+  8,
+);
 
 interface UploadImagesResponse {
   results?: Array<{
@@ -30,9 +34,22 @@ interface SearchFacesResponse {
 
 export class HFSpacesFaceService implements AIFaceService {
   private readonly baseUrl: string;
+  private readonly requestTimeoutMs: number;
 
-  constructor(baseUrl = process.env.AI_SERVICE_URL || DEFAULT_AI_SERVICE_URL) {
-    this.baseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  constructor(baseUrl?: string) {
+    const resolvedBaseUrl = baseUrl ?? AI_SERVICE_URL;
+
+    if (!resolvedBaseUrl) {
+      throw new Error("AI_SERVICE_URL is not configured.");
+    }
+
+    this.baseUrl = resolvedBaseUrl.endsWith("/")
+      ? resolvedBaseUrl
+      : `${resolvedBaseUrl}/`;
+    this.requestTimeoutMs = parsePositiveNumber(
+      process.env.AI_SERVICE_TIMEOUT_MS,
+      DEFAULT_REQUEST_TIMEOUT_MS,
+    );
   }
 
   async indexImages(request: FaceIndexRequest): Promise<FaceIndexResult[]> {
@@ -40,11 +57,9 @@ export class HFSpacesFaceService implements AIFaceService {
       return [];
     }
 
-    const images = await Promise.all(
-      request.images.map(async (image) => ({
-        imageId: image.imageId,
-        imageData: await toDataUrl(image.imageUrl),
-      })),
+    const images = await buildChunkedImagePayload(
+      request.images,
+      this.requestTimeoutMs,
     );
 
     const data = await this.requestJson<UploadImagesResponse>("/upload-images", {
@@ -63,7 +78,7 @@ export class HFSpacesFaceService implements AIFaceService {
   }
 
   async findMatches(request: FaceMatchRequest): Promise<FaceMatchResult[]> {
-    const imageData = await toDataUrl(request.selfieUrl);
+    const imageData = await toDataUrl(request.selfieUrl, this.requestTimeoutMs);
 
     const data = await this.requestJson<SearchFacesResponse>("/search-faces", {
       method: "POST",
@@ -94,7 +109,7 @@ export class HFSpacesFaceService implements AIFaceService {
         "Content-Type": "application/json",
         ...init.headers,
       },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.requestTimeoutMs),
       cache: "no-store",
     });
 
@@ -109,17 +124,44 @@ export class HFSpacesFaceService implements AIFaceService {
       throw new Error(errorMessage);
     }
 
+    if (data === null) {
+      throw new Error("Empty response body from AI service.");
+    }
+
     return data as T;
   }
 }
 
-async function toDataUrl(imageUrl: string): Promise<string> {
+async function buildChunkedImagePayload(
+  images: FaceIndexRequest["images"],
+  requestTimeoutMs: number,
+) {
+  const payload: Array<{ imageId: string; imageData: string }> = [];
+
+  for (let i = 0; i < images.length; i += IMAGE_CONVERSION_CHUNK_SIZE) {
+    const chunk = images.slice(i, i + IMAGE_CONVERSION_CHUNK_SIZE);
+    const chunkPayload = await Promise.all(
+      chunk.map(async (image) => ({
+        imageId: image.imageId,
+        imageData: await toDataUrl(image.imageUrl, requestTimeoutMs),
+      })),
+    );
+    payload.push(...chunkPayload);
+  }
+
+  return payload;
+}
+
+async function toDataUrl(
+  imageUrl: string,
+  requestTimeoutMs: number,
+): Promise<string> {
   if (imageUrl.startsWith("data:")) {
     return imageUrl;
   }
 
   const response = await fetch(imageUrl, {
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(requestTimeoutMs),
     cache: "no-store",
   });
 
@@ -144,4 +186,15 @@ function isErrorResponse(
   value: unknown,
 ): value is { error?: string; facesDetected?: number } {
   return typeof value === "object" && value !== null;
+}
+
+function parsePositiveNumber(
+  value: string | undefined,
+  fallback: number,
+): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
 }

@@ -181,10 +181,15 @@ export async function confirmUpload(input: {
       .set({ status: IMAGE_STATUS.FAILED, updatedAt: new Date() })
       .where(eq(images.id, parsed.data.imageId));
 
+    const safeError =
+      error instanceof Error
+        ? { name: error.name, message: error.message }
+        : { name: "UnknownError", message: String(error) };
+
     processLogger.error("[confirmUpload] AI indexing failed", {
       imageId: image.id,
       albumId: image.albumId,
-      error,
+      error: safeError,
     });
 
     throw new Error(

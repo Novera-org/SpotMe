@@ -1,12 +1,12 @@
-import { inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { faces } from "@/lib/db/schema";
+import { faces, images } from "@/lib/db/schema";
 
 import { getAIService } from "./index";
 import type { FaceIndexImage } from "./types";
 
-const PLACEHOLDER_BBOX = { x: 0, y: 0, width: 0, height: 0 };
+export const PLACEHOLDER_BBOX = { x: 0, y: 0, width: 0, height: 0 };
 
 export async function indexAlbumImages(
   albumId: string,
@@ -29,29 +29,49 @@ export async function indexAlbumImages(
     }
   }
 
+  const imageIds = imagesToIndex.map((image) => image.imageId);
+
+  // Neon HTTP has no interactive transactions, so we use a batch transaction:
+  // lock image rows first, then conditionally insert missing placeholder faces.
+  await db.batch([
+    db.execute(
+      sql`SELECT ${images.id}
+          FROM ${images}
+          WHERE ${inArray(images.id, imageIds)}
+          FOR UPDATE`,
+    ),
+    db.execute(sql`
+      INSERT INTO faces (image_id, bbox, confidence)
+      SELECT
+        v.image_id::uuid,
+        v.bbox::jsonb,
+        v.confidence::real
+      FROM (
+        VALUES ${sql.join(
+          imagesToIndex.map((image) => {
+            const result = resultsByImageId.get(image.imageId);
+            const confidence = (result?.facesIndexed ?? 0) > 0 ? 1 : 0;
+            return sql`(${image.imageId}, ${JSON.stringify(PLACEHOLDER_BBOX)}, ${confidence})`;
+          }),
+          sql`, `,
+        )}
+      ) AS v(image_id, bbox, confidence)
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM faces f
+        WHERE f.image_id = v.image_id::uuid
+      )
+    `),
+  ]);
+
   const existingFaces = await db
-    .select({
-      imageId: faces.imageId,
-    })
+    .select({ imageId: faces.imageId })
     .from(faces)
-    .where(inArray(faces.imageId, imagesToIndex.map((image) => image.imageId)));
+    .where(inArray(faces.imageId, imageIds));
 
-  const existingImageIds = new Set(existingFaces.map((face) => face.imageId));
-  const missingFaceRows = imagesToIndex
-    .filter((image) => !existingImageIds.has(image.imageId))
-    .map((image) => {
-      const result = resultsByImageId.get(image.imageId);
-
-      return {
-        imageId: image.imageId,
-        bbox: PLACEHOLDER_BBOX,
-        // The external service owns the true embeddings, but we still need
-        // a local face row for existing foreign keys and match records.
-        confidence: (result?.facesIndexed ?? 0) > 0 ? 1 : 0,
-      };
-    });
-
-  if (missingFaceRows.length > 0) {
-    await db.insert(faces).values(missingFaceRows);
+  if (existingFaces.length !== imageIds.length) {
+    throw new Error(
+      "Failed to create or locate placeholder face rows for indexed images.",
+    );
   }
 }
