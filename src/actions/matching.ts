@@ -170,6 +170,8 @@ export async function runMatching(searchSessionId: string) {
       return { matchCount: 0, sessionId: searchSessionId };
     }
 
+    const readyImageIds = new Set(readyAlbumImages.map((image) => image.id));
+
     const existingAlbumFaces = await db
       .select({
         imageId: faces.imageId,
@@ -208,6 +210,10 @@ export async function runMatching(searchSessionId: string) {
       });
 
       for (const result of results) {
+        if (!readyImageIds.has(result.imageId)) {
+          continue;
+        }
+
         allMatches.push({
           searchSelfieId: selfie.id,
           imageId: result.imageId,
@@ -330,11 +336,22 @@ export async function runMatching(searchSessionId: string) {
       .update(searchSessions)
       .set({ status: SEARCH_STATUS.FAILED })
       .where(eq(searchSessions.id, searchSessionId));
-    return {
+
+    processLogger.error("[runMatching] Matching failed", {
+      searchSessionId,
+      albumId: session.albumId,
       error:
         error instanceof Error
-          ? error.message
-          : "Matching failed. Please try again.",
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : { name: "UnknownError", message: String(error) },
+    });
+
+    return {
+      error: "Matching failed. Please try again.",
     };
   }
 }
