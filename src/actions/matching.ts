@@ -35,11 +35,19 @@ function isSearchSessionOwnedByIdentity(
     guestId: string | null;
   },
 ) {
-  if (identity.userId) {
-    return session.userId === identity.userId;
+  if (identity.userId && session.userId === identity.userId) {
+    return true;
   }
 
-  return session.guestId === identity.guestId;
+  if (identity.guestId && session.guestId === identity.guestId) {
+    return true;
+  }
+
+  if (identity.userId) {
+    return false;
+  }
+
+  return false;
 }
 
 // ─── Start Search Session ────────────────────────────────────────

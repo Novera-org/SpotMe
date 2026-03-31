@@ -41,10 +41,6 @@ interface FileInfo {
 export async function requestUploadUrls(fileInfos: FileInfo[]) {
   const session = await requireAdmin();
   const adminId = session.user.id;
-  await enforceFreeTierRateLimitForSession(
-    session,
-    FREE_TIER_RATE_LIMIT_BUCKET.EVENT_HOLDER_UPLOAD,
-  );
 
   if (fileInfos.length === 0) {
     throw new Error("No files provided");
@@ -72,6 +68,11 @@ export async function requestUploadUrls(fileInfos: FileInfo[]) {
       );
     }
   }
+
+  await enforceFreeTierRateLimitForSession(
+    session,
+    FREE_TIER_RATE_LIMIT_BUCKET.EVENT_HOLDER_UPLOAD,
+  );
 
   // 1. Generate all presigned URLs and collect metadata
   const uploadData = await Promise.all(

@@ -5,6 +5,7 @@ export interface Identity {
   type: "user" | "guest";
   userId: string | null;
   guestId: string | null;
+  role: string | null;
 }
 
 /**
@@ -16,12 +17,19 @@ export async function requireIdentity(): Promise<Identity> {
   // Check for authenticated user first
   const session = await getServerSession();
   if (session) {
-    return { type: "user", userId: session.user.id, guestId: null };
+    const guest = await getCurrentGuest();
+
+    return {
+      type: "user",
+      userId: session.user.id,
+      guestId: guest?.id ?? null,
+      role: session.user.role,
+    };
   }
 
   // Fall back to guest (creates one if needed)
   const guest = await getOrCreateGuest();
-  return { type: "guest", userId: null, guestId: guest.id };
+  return { type: "guest", userId: null, guestId: guest.id, role: null };
 }
 
 /**
@@ -32,13 +40,20 @@ export async function getCurrentIdentity(): Promise<Identity | null> {
   // Check for authenticated user first
   const session = await getServerSession();
   if (session) {
-    return { type: "user", userId: session.user.id, guestId: null };
+    const guest = await getCurrentGuest();
+
+    return {
+      type: "user",
+      userId: session.user.id,
+      guestId: guest?.id ?? null,
+      role: session.user.role,
+    };
   }
 
   // Check for existing guest (don't create)
   const guest = await getCurrentGuest();
   if (guest) {
-    return { type: "guest", userId: null, guestId: guest.id };
+    return { type: "guest", userId: null, guestId: guest.id, role: null };
   }
 
   return null;
