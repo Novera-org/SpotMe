@@ -4,13 +4,14 @@ import { eq } from "drizzle-orm";
 import { requireIdentity } from "@/lib/auth/identity";
 import { db } from "@/lib/db";
 import { searchSelfies, searchSessions } from "@/lib/db/schema";
+import { processLogger, redactId } from "@/lib/logger";
 import {
   enforceFreeTierRateLimitForIdentity,
   FREE_TIER_RATE_LIMIT_BUCKET,
   isRateLimitExceededError,
 } from "@/lib/rate-limit";
 import { uploadSelfieSchema } from "@/lib/validations/search";
-import { uploadObjectToR2 } from "@/lib/storage/upload";
+import { deleteFromR2, uploadObjectToR2 } from "@/lib/storage/upload";
 
 function isSearchSessionOwnedByIdentity(
   session: {
@@ -30,10 +31,6 @@ function isSearchSessionOwnedByIdentity(
     return true;
   }
 
-  if (identity.userId) {
-    return false;
-  }
-
   return false;
 }
 
@@ -41,9 +38,12 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ sessionId: string }> },
 ) {
+  let resolvedSessionId = "unknown";
+
   try {
     const identity = await requireIdentity();
     const { sessionId } = await params;
+    resolvedSessionId = sessionId;
     const formData = await request.formData();
     const uploadedFile = formData.get("file");
 
@@ -86,14 +86,32 @@ export async function POST(
       body: fileBytes,
     });
 
-    const [selfie] = await db
-      .insert(searchSelfies)
-      .values({
-        searchSessionId: session.id,
-        r2Key,
-        r2Url,
-      })
-      .returning({ id: searchSelfies.id });
+    let selfie;
+    try {
+      [selfie] = await db
+        .insert(searchSelfies)
+        .values({
+          searchSessionId: session.id,
+          r2Key,
+          r2Url,
+        })
+        .returning({ id: searchSelfies.id });
+    } catch (error) {
+      try {
+        await deleteFromR2(r2Key);
+      } catch (cleanupError) {
+        processLogger.error("[selfie-upload] Failed to clean up orphaned R2 object", {
+          sessionId: redactId(session.id),
+          r2Key,
+          error:
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : String(cleanupError),
+        });
+      }
+
+      throw error;
+    }
 
     return NextResponse.json({ selfieId: selfie.id }, { status: 201 });
   } catch (error) {
@@ -108,6 +126,18 @@ export async function POST(
         },
       );
     }
+
+    processLogger.error("[selfie-upload] Unexpected upload failure", {
+      sessionId: redactId(resolvedSessionId),
+      error:
+        error instanceof Error
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : { message: String(error) },
+    });
 
     return NextResponse.json(
       { error: "We couldn't upload your selfie right now. Please try again." },
