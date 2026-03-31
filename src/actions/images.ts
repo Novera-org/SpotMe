@@ -18,6 +18,9 @@ import { eq, and, desc } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { albums } from "@/lib/db/schema";
 import { MAX_BATCH_SIZE } from "@/components/images/image-uploader/types";
+import { IMAGE_STATUS } from "@/config/constants";
+import { indexAlbumImages } from "@/lib/ai/indexing";
+import { processLogger } from "@/lib/logger";
 // ─── Types ───────────────────────────────────────────────────────
 
 interface FileInfo {
@@ -25,14 +28,6 @@ interface FileInfo {
   filename: string;
   contentType: string;
   fileSize: number;
-}
-
-interface UploadUrlResult {
-  imageId: string;
-  uploadUrl: string;
-  r2Key: string;
-  r2Url: string;
-  filename: string;
 }
 
 // ─── Request Upload URLs ─────────────────────────────────────────
@@ -91,7 +86,7 @@ export async function requestUploadUrls(fileInfos: FileInfo[]) {
         r2Key: data.r2Key,
         r2Url: data.r2Url,
         filename: data.filename,
-        status: "uploading" as const,
+        status: IMAGE_STATUS.UPLOADING,
       }))
     )
     .returning({ id: images.id });
@@ -131,6 +126,7 @@ export async function confirmUpload(input: {
       albumId: images.albumId,
       adminId: albums.adminId,
       r2Key: images.r2Key,
+      r2Url: images.r2Url,
     })
     .from(images)
     .innerJoin(albums, eq(images.albumId, albums.id))
@@ -148,7 +144,7 @@ export async function confirmUpload(input: {
   if (!storageMetadata) {
     await db
       .update(images)
-      .set({ status: "failed", updatedAt: new Date() })
+      .set({ status: IMAGE_STATUS.FAILED, updatedAt: new Date() })
       .where(eq(images.id, image.id));
     throw new Error("File not found in storage. Please try uploading again.");
   }
@@ -160,10 +156,44 @@ export async function confirmUpload(input: {
   ) {
     await db
       .update(images)
-      .set({ status: "failed", updatedAt: new Date() })
+      .set({ status: IMAGE_STATUS.FAILED, updatedAt: new Date() })
       .where(eq(images.id, image.id));
     throw new Error(
       `Storage metadata mismatch (Size: ${storageMetadata.contentLength} vs ${parsed.data.fileSize}, Type: ${storageMetadata.contentType} vs ${parsed.data.mimeType})`
+    );
+  }
+
+  await db
+    .update(images)
+    .set({ status: IMAGE_STATUS.PROCESSING, updatedAt: new Date() })
+    .where(eq(images.id, parsed.data.imageId));
+
+  try {
+    await indexAlbumImages(image.albumId, [
+      {
+        imageId: image.id,
+        imageUrl: image.r2Url,
+      },
+    ]);
+  } catch (error) {
+    await db
+      .update(images)
+      .set({ status: IMAGE_STATUS.FAILED, updatedAt: new Date() })
+      .where(eq(images.id, parsed.data.imageId));
+
+    const safeError =
+      error instanceof Error
+        ? { name: error.name, message: error.message }
+        : { name: "UnknownError", message: String(error) };
+
+    processLogger.error("[confirmUpload] AI indexing failed", {
+      imageId: image.id,
+      albumId: image.albumId,
+      error: safeError,
+    });
+
+    throw new Error(
+      "Image uploaded, but AI indexing failed. Please upload it again in a moment.",
     );
   }
 
@@ -171,7 +201,7 @@ export async function confirmUpload(input: {
   // Note: neon-http doesn't support interactive transactions, but batch() is atomic
   await db.batch([
     db.update(images)
-      .set({ status: "ready", updatedAt: new Date() })
+      .set({ status: IMAGE_STATUS.READY, updatedAt: new Date() })
       .where(eq(images.id, parsed.data.imageId)),
     db.insert(imageMetadata)
       .values({
