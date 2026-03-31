@@ -21,6 +21,10 @@ import { MAX_BATCH_SIZE } from "@/components/images/image-uploader/types";
 import { IMAGE_STATUS } from "@/config/constants";
 import { indexAlbumImages } from "@/lib/ai/indexing";
 import { processLogger } from "@/lib/logger";
+import {
+  enforceFreeTierRateLimitForSession,
+  FREE_TIER_RATE_LIMIT_BUCKET,
+} from "@/lib/rate-limit";
 // ─── Types ───────────────────────────────────────────────────────
 
 interface FileInfo {
@@ -64,6 +68,11 @@ export async function requestUploadUrls(fileInfos: FileInfo[]) {
       );
     }
   }
+
+  await enforceFreeTierRateLimitForSession(
+    session,
+    FREE_TIER_RATE_LIMIT_BUCKET.EVENT_HOLDER_UPLOAD,
+  );
 
   // 1. Generate all presigned URLs and collect metadata
   const uploadData = await Promise.all(

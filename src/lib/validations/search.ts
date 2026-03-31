@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-const ACCEPTED_SELFIE_TYPES = [
+export const ACCEPTED_SELFIE_TYPES = [
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/webp",
 ] as const;
 
-const MAX_SELFIE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_SELFIE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export const startSearchSchema = z.object({
   albumId: z.uuid({ message: "Invalid album ID" }),

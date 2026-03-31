@@ -5,7 +5,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import {
   searchSessions,
-  searchSelfies,
   matchResults,
   images,
   albums,
@@ -13,16 +12,43 @@ import {
 } from "@/lib/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { requireIdentity } from "@/lib/auth/identity";
-import { generatePresignedUploadUrl } from "@/lib/storage/upload";
 import { getAIService } from "@/lib/ai";
 import {
   startSearchSchema,
-  uploadSelfieSchema,
 } from "@/lib/validations/search";
 import { IMAGE_STATUS, SEARCH_STATUS } from "@/config/constants";
 import { logActivity } from "@/lib/activity";
 import { indexAlbumImages, PLACEHOLDER_BBOX } from "@/lib/ai/indexing";
 import { processLogger } from "@/lib/logger";
+import {
+  enforceFreeTierRateLimitForIdentity,
+  FREE_TIER_RATE_LIMIT_BUCKET,
+} from "@/lib/rate-limit";
+
+function isSearchSessionOwnedByIdentity(
+  session: {
+    userId: string | null;
+    guestId: string | null;
+  },
+  identity: {
+    userId: string | null;
+    guestId: string | null;
+  },
+) {
+  if (identity.userId && session.userId === identity.userId) {
+    return true;
+  }
+
+  if (identity.guestId && session.guestId === identity.guestId) {
+    return true;
+  }
+
+  if (identity.userId) {
+    return false;
+  }
+
+  return false;
+}
 
 // ─── Start Search Session ────────────────────────────────────────
 
@@ -33,6 +59,10 @@ export async function startSearchSession(albumId: string) {
   }
 
   const identity = await requireIdentity();
+  await enforceFreeTierRateLimitForIdentity(
+    identity,
+    FREE_TIER_RATE_LIMIT_BUCKET.USER_SEARCH_SESSION,
+  );
 
   // Fetch album with settings to get maxSelfies
   const album = await db.query.albums.findFirst({
@@ -75,38 +105,11 @@ export async function requestSelfieUploadUrl(input: {
   contentType: string;
   fileSize: number;
 }) {
-  const parsed = uploadSelfieSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
-  }
-
-  // Verify session exists
-  const session = await db.query.searchSessions.findFirst({
-    where: eq(searchSessions.id, parsed.data.searchSessionId),
-  });
-
-  if (!session) {
-    return { error: "Search session not found" };
-  }
-
-  // Generate presigned URL with selfies/ prefix
-  const { uploadUrl, r2Key, r2Url } = await generatePresignedUploadUrl({
-    albumId: `selfies/${session.albumId}`,
-    filename: parsed.data.filename,
-    contentType: parsed.data.contentType,
-  });
-
-  // Create selfie record
-  const [selfie] = await db
-    .insert(searchSelfies)
-    .values({
-      searchSessionId: session.id,
-      r2Key,
-      r2Url,
-    })
-    .returning({ id: searchSelfies.id });
-
-  return { selfieId: selfie.id, uploadUrl };
+  void input;
+  return {
+    error:
+      "Direct selfie upload URLs are disabled. Upload selfies through the backend route instead.",
+  };
 }
 
 // ─── Run Matching ────────────────────────────────────────────────
@@ -118,15 +121,22 @@ export async function runMatching(searchSessionId: string) {
     return { error: "Invalid search session ID" };
   }
 
-  // 2. Validate session exists and fetch selfies for matching
+  const identity = await requireIdentity();
+
+  // 2. Validate session exists, belongs to the current caller, and fetch selfies for matching
   const session = await db.query.searchSessions.findFirst({
     where: eq(searchSessions.id, searchSessionId),
     with: { selfies: true },
   });
 
-  if (!session) {
+  if (!session || !isSearchSessionOwnedByIdentity(session, identity)) {
     return { error: "Search session not found" };
   }
+
+  await enforceFreeTierRateLimitForIdentity(
+    identity,
+    FREE_TIER_RATE_LIMIT_BUCKET.USER_MATCHING,
+  );
 
   // Update status to matching
   await db
@@ -376,6 +386,20 @@ export async function runMatching(searchSessionId: string) {
 // ─── Get Match Results ───────────────────────────────────────────
 
 export async function getMatchResults(searchSessionId: string) {
+  const identity = await requireIdentity();
+  const searchSession = await db.query.searchSessions.findFirst({
+    where: eq(searchSessions.id, searchSessionId),
+    columns: {
+      id: true,
+      userId: true,
+      guestId: true,
+    },
+  });
+
+  if (!searchSession || !isSearchSessionOwnedByIdentity(searchSession, identity)) {
+    return [];
+  }
+
   const results = await db.query.matchResults.findMany({
     where: eq(matchResults.searchSessionId, searchSessionId),
     with: {
@@ -401,9 +425,14 @@ export async function getMatchResults(searchSessionId: string) {
 // ─── Get Search Session ──────────────────────────────────────────
 
 export async function getSearchSession(sessionId: string) {
-  return (
-    db.query.searchSessions.findFirst({
-      where: eq(searchSessions.id, sessionId),
-    }) ?? null
-  );
+  const identity = await requireIdentity();
+  const session = await db.query.searchSessions.findFirst({
+    where: eq(searchSessions.id, sessionId),
+  });
+
+  if (!session || !isSearchSessionOwnedByIdentity(session, identity)) {
+    return null;
+  }
+
+  return session;
 }

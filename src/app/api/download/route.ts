@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import { requireIdentity } from "@/lib/auth/identity";
+import {
+  enforceFreeTierRateLimitForIdentity,
+  FREE_TIER_RATE_LIMIT_BUCKET,
+  isRateLimitExceededError,
+} from "@/lib/rate-limit";
 import { R2_PUBLIC_URL } from "@/lib/storage/r2";
 
 export async function GET(request: Request) {
@@ -14,7 +20,7 @@ export async function GET(request: Request) {
   let downloadUrl: URL;
   try {
     downloadUrl = new URL(url);
-  } catch (error) {
+  } catch {
     return new NextResponse("Invalid URL format", { status: 400 });
   }
 
@@ -44,6 +50,25 @@ export async function GET(request: Request) {
 
   if (!isAtOrUnderAllowedPath) {
     return new NextResponse("Unauthorized download path", { status: 403 });
+  }
+
+  try {
+    const identity = await requireIdentity();
+    await enforceFreeTierRateLimitForIdentity(
+      identity,
+      FREE_TIER_RATE_LIMIT_BUCKET.USER_DOWNLOAD,
+    );
+  } catch (error) {
+    if (isRateLimitExceededError(error)) {
+      return new NextResponse(error.message, {
+        status: 429,
+        headers: {
+          "Retry-After": error.retryAfterSeconds.toString(),
+        },
+      });
+    }
+
+    throw error;
   }
 
   const controller = new AbortController();
