@@ -10,5 +10,7 @@ export { images, imageMetadata, faces, faceEmbeddings } from "./images";
 export { searchSessions, searchSelfies, matchResults, savedPhotos } from "./search";
 // Analytics
 export { downloads, activityLog } from "./analytics";
+// Infrastructure
+export { requestRateLimits } from "./rate-limits";
 // Relations
 export * from "./relations";

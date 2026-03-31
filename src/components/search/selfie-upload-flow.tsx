@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   startSearchSession,
-  requestSelfieUploadUrl,
   runMatching,
 } from "@/actions/matching";
 import { Camera, X, Search, AlertCircle, Loader2, Upload } from "lucide-react";
@@ -162,30 +161,22 @@ export function SelfieUploadFlow({
         );
         setProgressValue(10 + ((i + 1) / totalSelfies) * 40);
 
-        const urlResult = await requestSelfieUploadUrl({
-          searchSessionId: sessionId,
-          filename: selfie.file.name,
-          contentType: selfie.file.type,
-          fileSize: selfie.file.size,
-        });
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", selfie.file);
 
-        if ("error" in urlResult) {
-          throw new Error(
-            typeof urlResult.error === "string"
-              ? urlResult.error
-              : "Failed to get upload URL",
-          );
-        }
-
-        // Upload to R2 via presigned URL
-        const uploadResponse = await fetch(urlResult.uploadUrl, {
-          method: "PUT",
-          body: selfie.file,
-          headers: { "Content-Type": selfie.file.type },
+        const uploadResponse = await fetch(`/api/search-sessions/${sessionId}/selfies`, {
+          method: "POST",
+          body: uploadFormData,
         });
 
         if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload selfie ${i + 1}`);
+          const errorPayload = (await uploadResponse.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+
+          throw new Error(
+            errorPayload?.error || `Failed to upload selfie ${i + 1}`,
+          );
         }
       }
 

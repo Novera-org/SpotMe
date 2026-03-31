@@ -21,6 +21,10 @@ import { MAX_BATCH_SIZE } from "@/components/images/image-uploader/types";
 import { IMAGE_STATUS } from "@/config/constants";
 import { indexAlbumImages } from "@/lib/ai/indexing";
 import { processLogger } from "@/lib/logger";
+import {
+  enforceFreeTierRateLimitForSession,
+  FREE_TIER_RATE_LIMIT_BUCKET,
+} from "@/lib/rate-limit";
 // ─── Types ───────────────────────────────────────────────────────
 
 interface FileInfo {
@@ -37,6 +41,10 @@ interface FileInfo {
 export async function requestUploadUrls(fileInfos: FileInfo[]) {
   const session = await requireAdmin();
   const adminId = session.user.id;
+  await enforceFreeTierRateLimitForSession(
+    session,
+    FREE_TIER_RATE_LIMIT_BUCKET.EVENT_HOLDER_UPLOAD,
+  );
 
   if (fileInfos.length === 0) {
     throw new Error("No files provided");
